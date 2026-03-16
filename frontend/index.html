@@ -1,29 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Boseman</title>
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
 </head>
 <body>
 
-  <div class="bg-orbs">
-    <div class="orb orb1"></div>
-    <div class="orb orb2"></div>
-    <div class="orb orb3"></div>
+  <div class="topbar">
+    <button class="mode-toggle" id="modeToggle">
+      <span class="mode-label" id="modeLabel">Dark mode</span>
+      <div class="mode-switch">
+        <div class="mode-thumb"></div>
+      </div>
+    </button>
   </div>
 
-  <main class="center-stage">
+  <main class="stage">
 
-    <div class="logo-wrap">
-      <span class="logo-text">BOSEMAN</span>
-      <span class="logo-sub">Urban Snake Displacement Search</span>
-    </div>
+    <h1 class="logo">Boseman</h1>
+    <p class="tagline">Urban Snake Displacement Search</p>
 
-    <div class="search-container">
-      <div class="search-bar-wrap">
+    <div class="search-wrap">
+      <div class="search-bar">
         <input
           type="text"
           id="searchInput"
@@ -31,108 +32,27 @@
           placeholder="Search species, location, habitat..."
           autocomplete="off"
         />
-        <button class="search-btn" id="searchBtn" title="Search">
+        <button class="search-btn" id="searchBtn">
           <span class="b-letter" id="bLetter">b</span>
         </button>
       </div>
 
       <div class="tools-row">
-        <button class="tools-toggle" id="toolsToggle">
-          <span class="tools-icon">⚙</span>
-          <span>Tools</span>
-          <span class="chevron" id="chevron">▾</span>
-        </button>
+        <button class="tools-toggle" id="toolsToggle">Tools</button>
       </div>
 
-      <div class="tools-panel" id="toolsPanel">
-        <div class="tools-header-row">
-          <span class="tools-label">Filters</span>
-          <div class="tools-actions">
-            <button class="action-btn" id="addAllBtn">Add All</button>
-            <button class="action-btn" id="removeAllBtn">Remove All</button>
-          </div>
-        </div>
-        <div class="tools-list">
-
-          <div class="tool-item" data-tool="species">
-            <div class="tool-icon-wrap">🧬</div>
-            <div class="tool-info">
-              <span class="tool-name">Species</span>
-              <span class="tool-desc">Biology & taxonomy filter</span>
-            </div>
-            <div class="tool-toggle-btn" data-tool="species">
-              <div class="toggle-track">
-                <div class="toggle-thumb"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="tool-item" data-tool="location">
-            <div class="tool-icon-wrap">📍</div>
-            <div class="tool-info">
-              <span class="tool-name">Location</span>
-              <span class="tool-desc">Geography & region filter</span>
-            </div>
-            <div class="tool-toggle-btn" data-tool="location">
-              <div class="toggle-track">
-                <div class="toggle-thumb"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="tool-item" data-tool="hospitals">
-            <div class="tool-icon-wrap">🏥</div>
-            <div class="tool-info">
-              <span class="tool-name">Hospitals</span>
-              <span class="tool-desc">Medical infrastructure nearby</span>
-            </div>
-            <div class="tool-toggle-btn" data-tool="hospitals">
-              <div class="toggle-track">
-                <div class="toggle-thumb"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="tool-item" data-tool="habitat">
-            <div class="tool-icon-wrap">🌿</div>
-            <div class="tool-info">
-              <span class="tool-name">Habitat Loss</span>
-              <span class="tool-desc">GEE vegetation data layer</span>
-            </div>
-            <div class="tool-toggle-btn" data-tool="habitat">
-              <div class="toggle-track">
-                <div class="toggle-thumb"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="tool-item" data-tool="urban">
-            <div class="tool-icon-wrap">🏗️</div>
-            <div class="tool-info">
-              <span class="tool-name">Urban Sprawl</span>
-              <span class="tool-desc">Copernicus construction data</span>
-            </div>
-            <div class="tool-toggle-btn" data-tool="urban">
-              <div class="toggle-track">
-                <div class="toggle-thumb"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="tool-item upload-item" data-tool="image">
-            <div class="tool-icon-wrap">📷</div>
-            <div class="tool-info">
-              <span class="tool-name">Image Upload</span>
-              <span class="tool-desc">Visual species identification</span>
-            </div>
-            <label class="upload-label">
-              <input type="file" id="imageUpload" accept="image/*" hidden />
-              <span class="upload-btn">Upload</span>
-            </label>
-          </div>
-
-        </div>
+      <div class="chips-row" id="chipsRow">
+        <button class="chip" data-filter="species">Species</button>
+        <button class="chip" data-filter="location">Location</button>
+        <button class="chip" data-filter="hospitals">Hospitals</button>
+        <button class="chip" data-filter="habitat">Habitat Loss</button>
+        <button class="chip" data-filter="urban">Urban Sprawl</button>
+        <label class="chip upload-chip">
+          Image Upload
+          <input type="file" id="imageUpload" accept="image/*" hidden/>
+        </label>
       </div>
+
     </div>
 
   </main>
