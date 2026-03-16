@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Boseman</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <div class="bg-orbs">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <main class="center-stage">
+
+    <div class="logo-wrap">
+      <span class="logo-text">BOSEMAN</span>
+      <span class="logo-sub">Urban Snake Displacement Search</span>
+    </div>
+
+    <div class="search-container">
+      <div class="search-bar-wrap">
+        <input
+          type="text"
+          id="searchInput"
+          class="search-input"
+          placeholder="Search species, location, habitat..."
+          autocomplete="off"
+        />
+        <button class="search-btn" id="searchBtn" title="Search">
+          <span class="b-letter" id="bLetter">b</span>
+        </button>
+      </div>
+
+      <div class="tools-row">
+        <button class="tools-toggle" id="toolsToggle">
+          <span class="tools-icon">⚙</span>
+          <span>Tools</span>
+          <span class="chevron" id="chevron">▾</span>
+        </button>
+      </div>
+
+      <div class="tools-panel" id="toolsPanel">
+        <div class="tools-header-row">
+          <span class="tools-label">Filters</span>
+          <div class="tools-actions">
+            <button class="action-btn" id="addAllBtn">Add All</button>
+            <button class="action-btn" id="removeAllBtn">Remove All</button>
+          </div>
+        </div>
+        <div class="tools-list">
+
+          <div class="tool-item" data-tool="species">
+            <div class="tool-icon-wrap">🧬</div>
+            <div class="tool-info">
+              <span class="tool-name">Species</span>
+              <span class="tool-desc">Biology & taxonomy filter</span>
+            </div>
+            <div class="tool-toggle-btn" data-tool="species">
+              <div class="toggle-track">
+                <div class="toggle-thumb"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tool-item" data-tool="location">
+            <div class="tool-icon-wrap">📍</div>
+            <div class="tool-info">
+              <span class="tool-name">Location</span>
+              <span class="tool-desc">Geography & region filter</span>
+            </div>
+            <div class="tool-toggle-btn" data-tool="location">
+              <div class="toggle-track">
+                <div class="toggle-thumb"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tool-item" data-tool="hospitals">
+            <div class="tool-icon-wrap">🏥</div>
+            <div class="tool-info">
+              <span class="tool-name">Hospitals</span>
+              <span class="tool-desc">Medical infrastructure nearby</span>
+            </div>
+            <div class="tool-toggle-btn" data-tool="hospitals">
+              <div class="toggle-track">
+                <div class="toggle-thumb"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tool-item" data-tool="habitat">
+            <div class="tool-icon-wrap">🌿</div>
+            <div class="tool-info">
+              <span class="tool-name">Habitat Loss</span>
+              <span class="tool-desc">GEE vegetation data layer</span>
+            </div>
+            <div class="tool-toggle-btn" data-tool="habitat">
+              <div class="toggle-track">
+                <div class="toggle-thumb"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tool-item" data-tool="urban">
+            <div class="tool-icon-wrap">🏗️</div>
+            <div class="tool-info">
+              <span class="tool-name">Urban Sprawl</span>
+              <span class="tool-desc">Copernicus construction data</span>
+            </div>
+            <div class="tool-toggle-btn" data-tool="urban">
+              <div class="toggle-track">
+                <div class="toggle-thumb"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tool-item upload-item" data-tool="image">
+            <div class="tool-icon-wrap">📷</div>
+            <div class="tool-info">
+              <span class="tool-name">Image Upload</span>
+              <span class="tool-desc">Visual species identification</span>
+            </div>
+            <label class="upload-label">
+              <input type="file" id="imageUpload" accept="image/*" hidden />
+              <span class="upload-btn">Upload</span>
+            </label>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
