@@ -7,8 +7,10 @@ load_dotenv()
 COPERNICUS_CLIENT_ID     = os.getenv("COPERNICUS_CLIENT_ID")
 COPERNICUS_CLIENT_SECRET = os.getenv("COPERNICUS_CLIENT_SECRET")
 
-TOKEN_URL = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
-STAC_URL  = "https://catalogue.dataspace.copernicus.eu/stac/collections/SENTINEL-2/items"
+TOKEN_URL  = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
+STAC_URL   = "https://catalogue.dataspace.copernicus.eu/stac/collections/clms_urban-atlas_land-cover-use_europe_V025ha_vector_static_v01/items"
+WMS_URL    = "https://mapserver.dataspace.copernicus.eu/ogc"
+WMS_LAYER  = "CLMS_UA_LCU_S2021_V025ha"
 
 
 def _get_access_token() -> str:
@@ -24,8 +26,8 @@ def _get_access_token() -> str:
 
 def get_copernicus_data(query: str) -> dict | None:
     """
-    Query Copernicus STAC API for recent Sentinel-2 imagery.
-    Returns normalized data for the Urban Sprawl map layer.
+    Query Copernicus Urban Atlas STAC API for land cover data.
+    Returns WMS layer info and feature bboxes for the Urban Sprawl map layer.
     """
     try:
         # ── Step 1: Get access token ──
@@ -36,10 +38,9 @@ def get_copernicus_data(query: str) -> dict | None:
             "Accept":        "application/json"
         }
 
-        # ── Step 2: Query STAC API — lightweight and fast ──
+        # ── Step 2: Query STAC items — no heavy catalogue, just metadata ──
         params = {
-            "limit":    5,
-            "sortby":   "-datetime",
+            "limit": 10,
         }
 
         response = requests.get(
@@ -55,22 +56,33 @@ def get_copernicus_data(query: str) -> dict | None:
 
         if not features:
             return {
-                "source":   "Copernicus",
-                "query":    query,
-                "message":  "No recent imagery found",
-                "products": []
+                "source":    "Copernicus",
+                "query":     query,
+                "message":   "No urban land cover data found",
+                "features":  [],
+                "wms_url":   None,
+                "wms_layer": WMS_LAYER,
             }
 
-        # ── Step 3: Normalize results ──
-        products = []
+        # ── Step 3: Normalize features ──
+        normalized = []
         for feature in features:
             props    = feature.get("properties", {})
+            bbox     = feature.get("bbox", [])
             geometry = feature.get("geometry", {})
-            bbox     = feature.get("bbox", None)
 
-            # Convert bbox array [min_lng, min_lat, max_lng, max_lat] to dict
+            # Extract WMS link from feature links
+            links    = feature.get("links", [])
+            wms_link = next((l.get("href") for l in links if l.get("rel") == "wms"), WMS_URL)
+
+            # Get WMS layers from link
+            wms_layers = next(
+                (l.get("wms:layers", [WMS_LAYER]) for l in links if l.get("rel") == "wms"),
+                [WMS_LAYER]
+            )
+
             bbox_dict = None
-            if bbox and len(bbox) == 4:
+            if len(bbox) == 4:
                 bbox_dict = {
                     "min_lng": bbox[0],
                     "min_lat": bbox[1],
@@ -78,27 +90,37 @@ def get_copernicus_data(query: str) -> dict | None:
                     "max_lat": bbox[3],
                 }
 
-            # Extract thumbnail link
-            links     = feature.get("links", [])
-            thumbnail = next((l.get("href") for l in links if l.get("rel") == "thumbnail"), None)
+            private = props.get("_private", {}).get("odata", {})
 
-            products.append({
+            normalized.append({
                 "id":           feature.get("id", ""),
-                "title":        props.get("title", feature.get("id", "Sentinel-2 Image")),
-                "date":         props.get("datetime", "Unknown date"),
-                "cloud_cover":  props.get("eo:cloud_cover", "N/A"),
-                "platform":     props.get("platform", "Sentinel-2"),
+                "region":       props.get("region:name", private.get("fuaName", "Unknown")),
+                "country":      props.get("region:country", private.get("countryCode", "")),
+                "date":         props.get("datetime", "2021-01-01"),
                 "bbox":         bbox_dict,
-                "thumbnail":    thumbnail,
+                "geometry":     geometry,
+                "wms_url":      wms_link,
+                "wms_layers":   wms_layers,
             })
 
         return {
-            "source":        "Copernicus",
-            "query":         query,
-            "total_results": len(products),
-            "products":      products,
-            "layer_type":    "urban_sprawl",
-            "description":   "Recent Sentinel-2 satellite imagery showing land cover and urban expansion"
+            "source":      "Copernicus",
+            "query":       query,
+            "layer_type":  "urban_sprawl",
+            "description": "Urban Atlas land cover and land use data — European urban areas 2021",
+            "wms_url":     WMS_URL,
+            "wms_layer":   WMS_LAYER,
+            "wms_params": {
+                "SERVICE":     "WMS",
+                "VERSION":     "1.3.0",
+                "REQUEST":     "GetMap",
+                "LAYERS":      WMS_LAYER,
+                "FORMAT":      "image/png",
+                "TRANSPARENT": "true",
+                "CRS":         "EPSG:4326",
+            },
+            "features":       normalized,
+            "total_features": len(normalized),
         }
 
     except requests.exceptions.Timeout:

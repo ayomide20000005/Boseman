@@ -6,30 +6,42 @@ HEADERS = {
     "User-Agent": "Boseman/1.0 (urban snake displacement search engine)"
 }
 
+SNAKE_TERMS = [
+    "snake", "cobra", "mamba", "python", "viper", "boa",
+    "adder", "anaconda", "rattlesnake", "asp", "krait",
+    "boomslang", "puff adder", "green mamba", "black mamba",
+    "king cobra", "rock python", "ball python", "corn snake",
+    "garter snake", "water moccasin", "copperhead", "bushmaster",
+    "fer-de-lance", "taipan", "death adder", "sea snake",
+    "tree snake", "rat snake", "serpent", "serpentes",
+    "venomous", "reptile", "displacement", "urban", "sighting"
+]
+
 
 def search_nominatim(query: str) -> dict | None:
     """
     Geocode a location from the search query using Nominatim.
-    Extracts the location part from the query and returns coordinates.
+    Strips snake-related terms to extract the location cleanly.
     """
     try:
         # ── Step 1: Try geocoding the full query first ──
         result = _geocode(query)
 
-        # ── Step 2: If no result, strip common snake names and retry ──
+        # ── Step 2: Strip snake terms and retry with clean location ──
         if not result:
-            snake_terms = [
-                "snake", "cobra", "mamba", "python", "viper", "boa",
-                "adder", "anaconda", "rattlesnake", "asp", "krait",
-                "boomslang", "puff adder", "green mamba", "black mamba",
-                "serpent", "Serpentes"
-            ]
-            cleaned_query = query
-            for term in snake_terms:
-                cleaned_query = cleaned_query.lower().replace(term.lower(), "").strip()
+            cleaned = _clean_location(query)
+            if cleaned and cleaned.lower() != query.lower():
+                result = _geocode(cleaned)
 
-            if cleaned_query and cleaned_query != query.lower():
-                result = _geocode(cleaned_query)
+        # ── Step 3: If still no result try each word individually ──
+        if not result:
+            cleaned = _clean_location(query)
+            words = cleaned.split()
+            for word in reversed(words):
+                if len(word) > 2:
+                    result = _geocode(word)
+                    if result:
+                        break
 
         return result
 
@@ -43,10 +55,24 @@ def search_nominatim(query: str) -> dict | None:
         raise Exception(f"Nominatim error: {str(e)}")
 
 
+def _clean_location(query: str) -> str:
+    """
+    Strip snake-related and non-location terms from query.
+    """
+    cleaned = query
+    for term in SNAKE_TERMS:
+        cleaned = cleaned.lower().replace(term.lower(), "").strip()
+    cleaned = " ".join(cleaned.split())
+    return cleaned
+
+
 def _geocode(query: str) -> dict | None:
     """
     Internal function to perform the actual geocoding request.
     """
+    if not query or len(query.strip()) < 2:
+        return None
+
     params = {
         "q":              query,
         "format":         "json",
@@ -66,7 +92,7 @@ def _geocode(query: str) -> dict | None:
     if not data:
         return None
 
-    place = data[0]
+    place   = data[0]
     address = place.get("address", {})
 
     # ── Build clean display name ──
