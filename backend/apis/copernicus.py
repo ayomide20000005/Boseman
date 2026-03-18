@@ -7,8 +7,8 @@ load_dotenv()
 COPERNICUS_CLIENT_ID     = os.getenv("COPERNICUS_CLIENT_ID")
 COPERNICUS_CLIENT_SECRET = os.getenv("COPERNICUS_CLIENT_SECRET")
 
-TOKEN_URL  = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
-SEARCH_URL = "https://catalogue.dataspace.copernicus.eu/odata/v1/Products"
+TOKEN_URL = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
+STAC_URL  = "https://catalogue.dataspace.copernicus.eu/stac/collections/SENTINEL-2/items"
 
 
 def _get_access_token() -> str:
@@ -24,7 +24,7 @@ def _get_access_token() -> str:
 
 def get_copernicus_data(query: str) -> dict | None:
     """
-    Query Copernicus Data Space for recent Sentinel-2 imagery.
+    Query Copernicus STAC API for recent Sentinel-2 imagery.
     Returns normalized data for the Urban Sprawl map layer.
     """
     try:
@@ -36,26 +36,24 @@ def get_copernicus_data(query: str) -> dict | None:
             "Accept":        "application/json"
         }
 
-        # ── Step 2: Very simple lightweight query — just top 5 recent products ──
+        # ── Step 2: Query STAC API — lightweight and fast ──
         params = {
-            "$filter":  "startswith(Name,'S2A') and Online eq true",
-            "$orderby": "ContentDate/Start desc",
-            "$top":     5,
-            "$select":  "Id,Name,ContentDate,Footprint,Online",
+            "limit":    5,
+            "sortby":   "-datetime",
         }
 
         response = requests.get(
-            SEARCH_URL,
+            STAC_URL,
             headers=headers,
             params=params,
-            timeout=60
+            timeout=30
         )
         response.raise_for_status()
         data = response.json()
 
-        products_raw = data.get("value", [])
+        features = data.get("features", [])
 
-        if not products_raw:
+        if not features:
             return {
                 "source":   "Copernicus",
                 "query":    query,
@@ -65,35 +63,33 @@ def get_copernicus_data(query: str) -> dict | None:
 
         # ── Step 3: Normalize results ──
         products = []
-        for item in products_raw:
-            footprint = item.get("Footprint", "")
-            bbox = None
-            if footprint:
-                try:
-                    coords_str = footprint.replace("geography'SRID=4326;POLYGON ((", "").replace("))'", "")
-                    coord_pairs = coords_str.strip().split(",")
-                    lngs, lats = [], []
-                    for pair in coord_pairs:
-                        parts = pair.strip().split()
-                        if len(parts) == 2:
-                            lngs.append(float(parts[0]))
-                            lats.append(float(parts[1]))
-                    if lngs and lats:
-                        bbox = {
-                            "min_lat": min(lats),
-                            "max_lat": max(lats),
-                            "min_lng": min(lngs),
-                            "max_lng": max(lngs),
-                        }
-                except Exception:
-                    bbox = None
+        for feature in features:
+            props    = feature.get("properties", {})
+            geometry = feature.get("geometry", {})
+            bbox     = feature.get("bbox", None)
+
+            # Convert bbox array [min_lng, min_lat, max_lng, max_lat] to dict
+            bbox_dict = None
+            if bbox and len(bbox) == 4:
+                bbox_dict = {
+                    "min_lng": bbox[0],
+                    "min_lat": bbox[1],
+                    "max_lng": bbox[2],
+                    "max_lat": bbox[3],
+                }
+
+            # Extract thumbnail link
+            links     = feature.get("links", [])
+            thumbnail = next((l.get("href") for l in links if l.get("rel") == "thumbnail"), None)
 
             products.append({
-                "id":     item.get("Id", ""),
-                "title":  item.get("Name", "Sentinel-2 Image"),
-                "date":   item.get("ContentDate", {}).get("Start", "Unknown date"),
-                "online": item.get("Online", False),
-                "bbox":   bbox,
+                "id":           feature.get("id", ""),
+                "title":        props.get("title", feature.get("id", "Sentinel-2 Image")),
+                "date":         props.get("datetime", "Unknown date"),
+                "cloud_cover":  props.get("eo:cloud_cover", "N/A"),
+                "platform":     props.get("platform", "Sentinel-2"),
+                "bbox":         bbox_dict,
+                "thumbnail":    thumbnail,
             })
 
         return {
