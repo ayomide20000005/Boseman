@@ -3,69 +3,91 @@
 const searchBtn   = document.getElementById('searchBtn');
 const searchInput = document.getElementById('searchInput');
 const toolsBtn    = document.getElementById('toolsBtn');
-const toolsPanel  = document.getElementById('toolsPanel');
-const toolsChevron = document.getElementById('toolsChevron');
+const toolsStrip  = document.getElementById('toolsStrip');
+const searchBar   = document.getElementById('searchBar');
+const activeBar   = document.getElementById('activeBar');
 const imageUpload = document.getElementById('imageUpload');
 
-// ── Active filters ──
+// ── Active filters state ──
 const activeFilters = new Set();
 
-// ── Tools panel open/close ──
+// ── Tools strip open/close ──
 let toolsOpen = false;
 
 toolsBtn.addEventListener('click', () => {
   toolsOpen = !toolsOpen;
-  toolsPanel.classList.toggle('open', toolsOpen);
+  toolsStrip.classList.toggle('open', toolsOpen);
+  searchBar.classList.toggle('tools-open', toolsOpen);
   toolsBtn.classList.toggle('open', toolsOpen);
-  toolsChevron.classList.toggle('open', toolsOpen);
 });
 
-// ── Tool card select / deselect ──
-document.querySelectorAll('.tool-card[data-tool]').forEach(card => {
-  card.addEventListener('click', (e) => {
-    // Don't toggle if clicking the file input label internals
+// ── Tool chip select/deselect ──
+document.querySelectorAll('.tool-chip[data-tool]').forEach(chip => {
+  chip.addEventListener('click', (e) => {
     if (e.target === imageUpload) return;
 
-    const tool = card.dataset.tool;
+    const tool = chip.dataset.tool;
 
     if (tool === 'image') {
-      // Trigger file picker
       imageUpload.click();
-      card.classList.add('active');
-      activeFilters.add('image');
       return;
     }
 
     if (activeFilters.has(tool)) {
       activeFilters.delete(tool);
-      card.classList.remove('active');
+      chip.classList.remove('active');
     } else {
       activeFilters.add(tool);
-      card.classList.add('active');
+      chip.classList.add('active');
     }
+
+    renderActiveTags();
   });
 });
 
-// ── Image upload handler ──
+// ── Image upload ──
 imageUpload.addEventListener('change', (e) => {
   const file = e.target.files[0];
+  const imageChip = document.querySelector('.tool-chip[data-tool="image"]');
+
   if (!file) {
-    // If user cancels, deselect image card
-    const imageCard = document.querySelector('.tool-card[data-tool="image"]');
-    imageCard.classList.remove('active');
     activeFilters.delete('image');
-    return;
+    imageChip.classList.remove('active');
+  } else {
+    activeFilters.add('image');
+    imageChip.classList.add('active');
+    console.log('Image selected for species ID:', file.name);
   }
-  console.log('Image selected for species ID:', file.name);
-  // TODO: send to backend for species identification
+
+  renderActiveTags();
 });
+
+// ── Render active filter tags below bar ──
+function renderActiveTags() {
+  activeBar.innerHTML = '';
+
+  const labels = {
+    species:   'Species',
+    location:  'Location',
+    hospitals: 'Hospitals',
+    habitat:   'Habitat Loss',
+    urban:     'Urban Sprawl',
+    image:     'Image Upload'
+  };
+
+  activeFilters.forEach(filter => {
+    const tag = document.createElement('span');
+    tag.className = 'active-tag';
+    tag.textContent = labels[filter] || filter;
+    activeBar.appendChild(tag);
+  });
+}
 
 // ── Rolling b search ──
 function triggerSearch() {
   const query = searchInput.value.trim();
   if (!query) return;
 
-  // Spin the b
   searchBtn.classList.remove('rolling');
   void searchBtn.offsetWidth;
   searchBtn.classList.add('rolling');

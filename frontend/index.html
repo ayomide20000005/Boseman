@@ -18,7 +18,32 @@
 
     <div class="search-container">
 
+      <!-- Tools strip — appears above search bar when Tools clicked -->
+      <div class="tools-strip" id="toolsStrip">
+        <button class="tool-chip" data-tool="species">Species</button>
+        <button class="tool-chip" data-tool="location">Location</button>
+        <button class="tool-chip" data-tool="hospitals">Hospitals</button>
+        <button class="tool-chip" data-tool="habitat">Habitat Loss</button>
+        <button class="tool-chip" data-tool="urban">Urban Sprawl</button>
+        <label class="tool-chip upload-chip" data-tool="image">
+          Image Upload
+          <input type="file" id="imageUpload" accept="image/*" hidden/>
+        </label>
+      </div>
+
+      <!-- Search bar with Tools button on left, rolling b on right -->
       <div class="search-bar" id="searchBar">
+        <button class="tools-btn" id="toolsBtn" title="Tools">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="6" x2="20" y2="6"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="18" x2="20" y2="18"/>
+          </svg>
+          <span>Tools</span>
+        </button>
+
+        <div class="divider"></div>
+
         <input
           type="text"
           id="searchInput"
@@ -26,144 +51,14 @@
           placeholder="Search species, location, habitat..."
           autocomplete="off"
         />
+
         <button class="search-btn" id="searchBtn" title="Search">
-          <span class="b-letter" id="bLetter">b</span>
+          <span class="b-letter">b</span>
         </button>
       </div>
 
-      <div class="tools-row">
-        <button class="tools-btn" id="toolsBtn">
-          <span class="tools-btn-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
-            </svg>
-          </span>
-          <span>Tools</span>
-          <span class="tools-chevron" id="toolsChevron">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </span>
-        </button>
-      </div>
-
-      <div class="tools-panel" id="toolsPanel">
-        <div class="tools-grid">
-
-          <button class="tool-card" data-tool="species">
-            <div class="tool-card-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2a10 10 0 1 0 10 10"/>
-                <path d="M12 6v6l4 2"/>
-                <circle cx="18" cy="6" r="3"/>
-              </svg>
-            </div>
-            <div class="tool-card-info">
-              <span class="tool-card-name">Species</span>
-              <span class="tool-card-desc">Biology & taxonomy data</span>
-            </div>
-            <div class="tool-check">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </div>
-          </button>
-
-          <button class="tool-card" data-tool="location">
-            <div class="tool-card-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="10" r="3"/>
-              </svg>
-            </div>
-            <div class="tool-card-info">
-              <span class="tool-card-name">Location</span>
-              <span class="tool-card-desc">Geography & region filter</span>
-            </div>
-            <div class="tool-check">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </div>
-          </button>
-
-          <button class="tool-card" data-tool="hospitals">
-            <div class="tool-card-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <path d="M12 8v8M8 12h8"/>
-              </svg>
-            </div>
-            <div class="tool-card-info">
-              <span class="tool-card-name">Hospitals</span>
-              <span class="tool-card-desc">Medical infrastructure nearby</span>
-            </div>
-            <div class="tool-check">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </div>
-          </button>
-
-          <button class="tool-card" data-tool="habitat">
-            <div class="tool-card-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 22V12M12 12C12 12 7 9 4 4c4 0 8 2 8 8zM12 12c0 0 5-3 8-8-4 0-8 2-8 8z"/>
-              </svg>
-            </div>
-            <div class="tool-card-info">
-              <span class="tool-card-name">Habitat Loss</span>
-              <span class="tool-card-desc">GEE vegetation layer</span>
-            </div>
-            <div class="tool-check">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </div>
-          </button>
-
-          <button class="tool-card" data-tool="urban">
-            <div class="tool-card-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="7" width="9" height="14" rx="1"/>
-                <rect x="13" y="3" width="9" height="18" rx="1"/>
-                <path d="M6 7V5M18 3V1"/>
-              </svg>
-            </div>
-            <div class="tool-card-info">
-              <span class="tool-card-name">Urban Sprawl</span>
-              <span class="tool-card-desc">Copernicus construction data</span>
-            </div>
-            <div class="tool-check">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </div>
-          </button>
-
-          <label class="tool-card upload-card" data-tool="image">
-            <div class="tool-card-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
-              </svg>
-            </div>
-            <div class="tool-card-info">
-              <span class="tool-card-name">Image Upload</span>
-              <span class="tool-card-desc">Visual species identification</span>
-            </div>
-            <div class="tool-check">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </div>
-            <input type="file" id="imageUpload" accept="image/*" hidden/>
-          </label>
-
-        </div>
-      </div>
+      <!-- Active filters display -->
+      <div class="active-bar" id="activeBar"></div>
 
     </div>
 
