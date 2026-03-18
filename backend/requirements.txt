@@ -3,4 +3,7 @@ flask-cors
 python-dotenv
 requests
 earthengine-api
-sentinelsat
+rasterio
+numpy
+geopandas
+shapely
