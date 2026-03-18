@@ -1,84 +1,76 @@
-// ── Boseman Frontend JS ──
+// ── Boseman app.js ──
 
-const searchBtn    = document.getElementById('searchBtn');
-const searchInput  = document.getElementById('searchInput');
-const bLetter      = document.getElementById('bLetter');
-const toolsToggle  = document.getElementById('toolsToggle');
-const toolsPanel   = document.getElementById('toolsPanel');
-const chevron      = document.getElementById('chevron');
-const addAllBtn    = document.getElementById('addAllBtn');
-const removeAllBtn = document.getElementById('removeAllBtn');
-const imageUpload  = document.getElementById('imageUpload');
+const searchBtn   = document.getElementById('searchBtn');
+const searchInput = document.getElementById('searchInput');
+const toolsBtn    = document.getElementById('toolsBtn');
+const toolsPanel  = document.getElementById('toolsPanel');
+const toolsChevron = document.getElementById('toolsChevron');
+const imageUpload = document.getElementById('imageUpload');
 
-// ── Active filters state ──
+// ── Active filters ──
 const activeFilters = new Set();
 
-// ── Tools Panel Toggle ──
-toolsToggle.addEventListener('click', () => {
-  const isOpen = toolsPanel.classList.toggle('open');
-  chevron.classList.toggle('open', isOpen);
+// ── Tools panel open/close ──
+let toolsOpen = false;
+
+toolsBtn.addEventListener('click', () => {
+  toolsOpen = !toolsOpen;
+  toolsPanel.classList.toggle('open', toolsOpen);
+  toolsBtn.classList.toggle('open', toolsOpen);
+  toolsChevron.classList.toggle('open', toolsOpen);
 });
 
-// ── Individual Tool Toggle ──
-document.querySelectorAll('.tool-toggle-btn').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const tool = btn.dataset.tool;
-    const item = btn.closest('.tool-item');
-    toggleTool(tool, item);
+// ── Tool card select / deselect ──
+document.querySelectorAll('.tool-card[data-tool]').forEach(card => {
+  card.addEventListener('click', (e) => {
+    // Don't toggle if clicking the file input label internals
+    if (e.target === imageUpload) return;
+
+    const tool = card.dataset.tool;
+
+    if (tool === 'image') {
+      // Trigger file picker
+      imageUpload.click();
+      card.classList.add('active');
+      activeFilters.add('image');
+      return;
+    }
+
+    if (activeFilters.has(tool)) {
+      activeFilters.delete(tool);
+      card.classList.remove('active');
+    } else {
+      activeFilters.add(tool);
+      card.classList.add('active');
+    }
   });
 });
 
-// Also allow clicking the whole row (except upload row)
-document.querySelectorAll('.tool-item:not(.upload-item)').forEach(item => {
-  item.addEventListener('click', () => {
-    const tool = item.dataset.tool;
-    toggleTool(tool, item);
-  });
-});
-
-function toggleTool(tool, item) {
-  if (activeFilters.has(tool)) {
-    activeFilters.delete(tool);
-    item.classList.remove('active');
-  } else {
-    activeFilters.add(tool);
-    item.classList.add('active');
+// ── Image upload handler ──
+imageUpload.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) {
+    // If user cancels, deselect image card
+    const imageCard = document.querySelector('.tool-card[data-tool="image"]');
+    imageCard.classList.remove('active');
+    activeFilters.delete('image');
+    return;
   }
-}
-
-// ── Add All ──
-addAllBtn.addEventListener('click', () => {
-  document.querySelectorAll('.tool-item:not(.upload-item)').forEach(item => {
-    const tool = item.dataset.tool;
-    activeFilters.add(tool);
-    item.classList.add('active');
-  });
+  console.log('Image selected for species ID:', file.name);
+  // TODO: send to backend for species identification
 });
 
-// ── Remove All ──
-removeAllBtn.addEventListener('click', () => {
-  activeFilters.clear();
-  document.querySelectorAll('.tool-item').forEach(item => {
-    item.classList.remove('active');
-  });
-});
-
-// ── Rolling b Search ──
+// ── Rolling b search ──
 function triggerSearch() {
   const query = searchInput.value.trim();
   if (!query) return;
 
-  // Roll the b
+  // Spin the b
   searchBtn.classList.remove('rolling');
-  void searchBtn.offsetWidth; // reflow to restart animation
+  void searchBtn.offsetWidth;
   searchBtn.classList.add('rolling');
+  setTimeout(() => searchBtn.classList.remove('rolling'), 600);
 
-  setTimeout(() => {
-    searchBtn.classList.remove('rolling');
-  }, 650);
-
-  // Build search payload
   const payload = {
     query,
     filters: Array.from(activeFilters)
@@ -86,7 +78,7 @@ function triggerSearch() {
 
   console.log('Boseman search payload:', payload);
 
-  // TODO: Send to backend
+  // ── Uncomment when backend is ready ──
   // fetch('http://localhost:5000/search', {
   //   method: 'POST',
   //   headers: { 'Content-Type': 'application/json' },
@@ -101,12 +93,4 @@ searchBtn.addEventListener('click', triggerSearch);
 
 searchInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') triggerSearch();
-});
-
-// ── Image Upload ──
-imageUpload.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  console.log('Image uploaded for species ID:', file.name);
-  // TODO: Send image to backend for species identification
 });
