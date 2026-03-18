@@ -2,42 +2,30 @@
 
 :root {
   --vib-bg:        #ddd4f0;
-  --vib-bg2:       #cfc4e8;
   --vib-surface:   #ede6f8;
   --vib-core:      #6a3db8;
   --vib-mid:       #8a5cd0;
   --vib-soft:      #a87de0;
   --vib-pale:      #cdb8f0;
   --vib-accent:    #5530a0;
-
   --white:         #ffffff;
   --text-primary:  #1a1030;
   --text-secondary:#5a4880;
   --text-muted:    #9080b8;
-
   --font-display:  'Playfair Display', serif;
   --font-body:     'Sora', sans-serif;
-
   --shadow-bar:    0 4px 28px rgba(90, 50, 170, 0.15);
-  --shadow-strip:  0 -4px 20px rgba(90, 50, 170, 0.08);
 }
 
-*, *::before, *::after {
-  margin: 0; padding: 0;
-  box-sizing: border-box;
-}
-
-html, body {
-  width: 100%;
-  min-height: 100%;
-}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; min-height: 100%; }
 
 body {
   background: var(--vib-bg);
   background-image:
-    radial-gradient(ellipse at 10% 15%, rgba(160, 120, 230, 0.28) 0%, transparent 50%),
-    radial-gradient(ellipse at 90% 80%, rgba(120, 80, 210, 0.2) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(180, 150, 240, 0.12) 0%, transparent 65%);
+    radial-gradient(ellipse at 10% 15%, rgba(160,120,230,0.28) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 80%, rgba(120,80,210,0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(180,150,240,0.12) 0%, transparent 65%);
   font-family: var(--font-body);
   color: var(--text-primary);
   overflow-x: hidden;
@@ -74,7 +62,6 @@ body {
   font-weight: 500;
   color: var(--text-primary);
   letter-spacing: 0.01em;
-  line-height: 1;
 }
 
 .tagline {
@@ -100,30 +87,21 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
-  padding: 12px 16px;
   background: var(--white);
   border: 1.5px solid var(--vib-pale);
   border-bottom: none;
   border-radius: 18px 18px 0 0;
-  box-shadow: var(--shadow-strip);
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  border-width: 0;
-  transition:
-    max-height 0.35s cubic-bezier(0.4,0,0.2,1),
-    opacity 0.28s ease,
-    padding 0.3s ease,
-    border-width 0.01s ease;
+  padding: 0 16px;
+  transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.28s ease, padding 0.3s ease;
 }
 
 .tools-strip.open {
   max-height: 160px;
   opacity: 1;
   padding: 12px 16px;
-  border-width: 1.5px;
 }
 
 /* ── Tool Chip ── */
@@ -140,7 +118,6 @@ body {
   color: var(--text-secondary);
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
-  letter-spacing: 0.02em;
   user-select: none;
 }
 
@@ -154,11 +131,7 @@ body {
   background: var(--vib-core);
   border-color: var(--vib-core);
   color: var(--white);
-  box-shadow: 0 2px 10px rgba(106, 61, 184, 0.35);
-}
-
-.upload-chip {
-  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(106,61,184,0.35);
 }
 
 /* ── Search Bar ── */
@@ -171,20 +144,20 @@ body {
   padding: 6px 6px 6px 6px;
   box-shadow: var(--shadow-bar);
   transition: border-color 0.25s, box-shadow 0.25s, border-radius 0.3s;
-  gap: 4px;
+  gap: 2px;
+  position: relative;
 }
 
 .search-bar.tools-open {
   border-radius: 0 0 50px 50px;
-  border-top: 1.5px solid var(--vib-pale);
 }
 
 .search-bar:focus-within {
   border-color: var(--vib-soft);
-  box-shadow: 0 4px 32px rgba(106, 61, 184, 0.2);
+  box-shadow: 0 4px 32px rgba(106,61,184,0.2);
 }
 
-/* ── Tools Button (left side of bar) ── */
+/* ── Tools Button ── */
 .tools-btn {
   display: inline-flex;
   align-items: center;
@@ -192,7 +165,7 @@ body {
   background: transparent;
   border: none;
   border-radius: 40px;
-  padding: 8px 14px;
+  padding: 8px 12px;
   font-family: var(--font-body);
   font-size: 0.8rem;
   font-weight: 500;
@@ -215,6 +188,97 @@ body {
   height: 22px;
   background: var(--vib-pale);
   flex-shrink: 0;
+  margin: 0 2px;
+}
+
+/* ── Plus Wrap ── */
+.plus-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* ── Plus Button ── */
+.plus-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid var(--vib-pale);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
+  flex-shrink: 0;
+}
+
+.plus-btn:hover,
+.plus-btn.open {
+  background: var(--vib-surface);
+  border-color: var(--vib-soft);
+  color: var(--vib-core);
+}
+
+.plus-btn.open {
+  transform: rotate(45deg);
+}
+
+/* ── Upload Dropdown ── */
+.upload-dropdown {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--white);
+  border: 1.5px solid var(--vib-pale);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(90,50,170,0.16);
+  overflow: hidden;
+  min-width: 160px;
+  display: none;
+  flex-direction: column;
+  z-index: 100;
+}
+
+.upload-dropdown.open {
+  display: flex;
+  animation: dropUp 0.22s ease both;
+}
+
+@keyframes dropUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── Upload Option ── */
+.upload-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  border: none;
+  background: transparent;
+}
+
+.upload-option:not(:last-child) {
+  border-bottom: 1px solid var(--vib-surface);
+}
+
+.upload-option:hover {
+  background: var(--vib-surface);
+  color: var(--vib-core);
+}
+
+.upload-option svg {
+  flex-shrink: 0;
+  color: var(--vib-mid);
 }
 
 /* ── Search Input ── */
@@ -249,13 +313,13 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 3px 14px rgba(106, 61, 184, 0.4);
+  box-shadow: 0 3px 14px rgba(106,61,184,0.4);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .search-btn:hover {
   transform: scale(1.07);
-  box-shadow: 0 5px 20px rgba(106, 61, 184, 0.5);
+  box-shadow: 0 5px 20px rgba(106,61,184,0.5);
 }
 
 .b-letter {
@@ -292,13 +356,12 @@ body {
   align-items: center;
   gap: 5px;
   padding: 4px 10px;
-  background: rgba(106,61,184,0.12);
+  background: rgba(106,61,184,0.1);
   border: 1px solid var(--vib-pale);
   border-radius: 20px;
   font-size: 0.72rem;
   font-weight: 400;
   color: var(--vib-accent);
-  letter-spacing: 0.02em;
   animation: tagPop 0.2s ease both;
 }
 

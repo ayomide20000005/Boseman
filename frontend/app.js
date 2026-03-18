@@ -1,19 +1,21 @@
 // ── Boseman app.js ──
 
-const searchBtn   = document.getElementById('searchBtn');
-const searchInput = document.getElementById('searchInput');
-const toolsBtn    = document.getElementById('toolsBtn');
-const toolsStrip  = document.getElementById('toolsStrip');
-const searchBar   = document.getElementById('searchBar');
-const activeBar   = document.getElementById('activeBar');
-const imageUpload = document.getElementById('imageUpload');
+const searchBtn      = document.getElementById('searchBtn');
+const searchInput    = document.getElementById('searchInput');
+const toolsBtn       = document.getElementById('toolsBtn');
+const toolsStrip     = document.getElementById('toolsStrip');
+const searchBar      = document.getElementById('searchBar');
+const activeBar      = document.getElementById('activeBar');
+const plusBtn        = document.getElementById('plusBtn');
+const uploadDropdown = document.getElementById('uploadDropdown');
+const imageUpload    = document.getElementById('imageUpload');
+const fileUpload     = document.getElementById('fileUpload');
 
-// ── Active filters state ──
 const activeFilters = new Set();
-
-// ── Tools strip open/close ──
 let toolsOpen = false;
+let plusOpen  = false;
 
+// ── Tools toggle ──
 toolsBtn.addEventListener('click', () => {
   toolsOpen = !toolsOpen;
   toolsStrip.classList.toggle('open', toolsOpen);
@@ -21,18 +23,51 @@ toolsBtn.addEventListener('click', () => {
   toolsBtn.classList.toggle('open', toolsOpen);
 });
 
+// ── Plus button toggle ──
+plusBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  plusOpen = !plusOpen;
+  uploadDropdown.classList.toggle('open', plusOpen);
+  plusBtn.classList.toggle('open', plusOpen);
+});
+
+// ── Close plus dropdown when clicking outside ──
+document.addEventListener('click', (e) => {
+  if (!plusBtn.contains(e.target) && !uploadDropdown.contains(e.target)) {
+    plusOpen = false;
+    uploadDropdown.classList.remove('open');
+    plusBtn.classList.remove('open');
+  }
+});
+
+// ── Image upload ──
+imageUpload.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  console.log('Image uploaded:', file.name);
+  closePlus();
+  // TODO: send to backend
+});
+
+// ── File upload ──
+fileUpload.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  console.log('File uploaded:', file.name);
+  closePlus();
+  // TODO: send to backend
+});
+
+function closePlus() {
+  plusOpen = false;
+  uploadDropdown.classList.remove('open');
+  plusBtn.classList.remove('open');
+}
+
 // ── Tool chip select/deselect ──
 document.querySelectorAll('.tool-chip[data-tool]').forEach(chip => {
-  chip.addEventListener('click', (e) => {
-    if (e.target === imageUpload) return;
-
+  chip.addEventListener('click', () => {
     const tool = chip.dataset.tool;
-
-    if (tool === 'image') {
-      imageUpload.click();
-      return;
-    }
-
     if (activeFilters.has(tool)) {
       activeFilters.delete(tool);
       chip.classList.remove('active');
@@ -40,41 +75,20 @@ document.querySelectorAll('.tool-chip[data-tool]').forEach(chip => {
       activeFilters.add(tool);
       chip.classList.add('active');
     }
-
     renderActiveTags();
   });
 });
 
-// ── Image upload ──
-imageUpload.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  const imageChip = document.querySelector('.tool-chip[data-tool="image"]');
-
-  if (!file) {
-    activeFilters.delete('image');
-    imageChip.classList.remove('active');
-  } else {
-    activeFilters.add('image');
-    imageChip.classList.add('active');
-    console.log('Image selected for species ID:', file.name);
-  }
-
-  renderActiveTags();
-});
-
-// ── Render active filter tags below bar ──
+// ── Render active tags below bar ──
 function renderActiveTags() {
   activeBar.innerHTML = '';
-
   const labels = {
     species:   'Species',
     location:  'Location',
     hospitals: 'Hospitals',
     habitat:   'Habitat Loss',
-    urban:     'Urban Sprawl',
-    image:     'Image Upload'
+    urban:     'Urban Sprawl'
   };
-
   activeFilters.forEach(filter => {
     const tag = document.createElement('span');
     tag.className = 'active-tag';
@@ -112,7 +126,6 @@ function triggerSearch() {
 }
 
 searchBtn.addEventListener('click', triggerSearch);
-
-searchInput.addEventListener('keydown', (e) => {
+searchInput.addEventListener('keydown', e => {
   if (e.key === 'Enter') triggerSearch();
 });
