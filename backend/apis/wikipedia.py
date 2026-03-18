@@ -1,7 +1,11 @@
 import requests
 
-BASE_URL = "https://en.wikipedia.org/api/rest_v1"
+BASE_URL   = "https://en.wikipedia.org/api/rest_v1"
 SEARCH_URL = "https://en.wikipedia.org/w/api.php"
+
+HEADERS = {
+    "User-Agent": "Boseman/1.0 (urban snake displacement search engine; contact@boseman.app)"
+}
 
 
 def search_wikipedia(query: str) -> dict | None:
@@ -21,6 +25,7 @@ def search_wikipedia(query: str) -> dict | None:
 
         search_response = requests.get(
             SEARCH_URL,
+            headers=HEADERS,
             params=search_params,
             timeout=10
         )
@@ -39,6 +44,7 @@ def search_wikipedia(query: str) -> dict | None:
         # ── Step 3: Fetch full page summary ──
         summary_response = requests.get(
             f"{BASE_URL}/page/summary/{page_title.replace(' ', '_')}",
+            headers=HEADERS,
             timeout=10
         )
         summary_response.raise_for_status()
@@ -57,6 +63,7 @@ def search_wikipedia(query: str) -> dict | None:
 
         content_response = requests.get(
             SEARCH_URL,
+            headers=HEADERS,
             params=content_params,
             timeout=10
         )
