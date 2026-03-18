@@ -6,10 +6,13 @@
   <title>Boseman</title>
   <link rel="stylesheet" href="style.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
-  <main class="stage">
+  <!-- ── Search Page ── -->
+  <main class="stage" id="searchStage">
 
     <div class="hero">
       <h1 class="logo">Boseman</h1>
@@ -18,7 +21,6 @@
 
     <div class="search-container">
 
-      <!-- Tools strip — slides above search bar -->
       <div class="tools-strip" id="toolsStrip">
         <button class="tool-chip" data-tool="species">Species</button>
         <button class="tool-chip" data-tool="location">Location</button>
@@ -27,10 +29,7 @@
         <button class="tool-chip" data-tool="urban">Urban Sprawl</button>
       </div>
 
-      <!-- Search bar -->
       <div class="search-bar" id="searchBar">
-
-        <!-- Tools button — left -->
         <button class="tools-btn" id="toolsBtn" title="Tools">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="4" y1="6" x2="20" y2="6"/>
@@ -42,7 +41,6 @@
 
         <div class="divider"></div>
 
-        <!-- Plus button — after Tools -->
         <div class="plus-wrap" id="plusWrap">
           <button class="plus-btn" id="plusBtn" title="Upload">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -50,10 +48,8 @@
               <line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
           </button>
-
-          <!-- Upload dropdown — vertical, shows on plus click -->
           <div class="upload-dropdown" id="uploadDropdown">
-            <label class="upload-option" id="uploadImageLabel">
+            <label class="upload-option">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2"/>
                 <circle cx="8.5" cy="8.5" r="1.5"/>
@@ -62,7 +58,7 @@
               <span>Upload Image</span>
               <input type="file" id="imageUpload" accept="image/*" hidden/>
             </label>
-            <label class="upload-option" id="uploadFileLabel">
+            <label class="upload-option">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                 <polyline points="14 2 14 8 20 8"/>
@@ -75,7 +71,6 @@
 
         <div class="divider"></div>
 
-        <!-- Search input -->
         <input
           type="text"
           id="searchInput"
@@ -84,19 +79,77 @@
           autocomplete="off"
         />
 
-        <!-- Rolling b button — right -->
         <button class="search-btn" id="searchBtn" title="Search">
           <span class="b-letter">b</span>
         </button>
-
       </div>
 
-      <!-- Active filters shown below bar -->
       <div class="active-bar" id="activeBar"></div>
 
     </div>
 
   </main>
+
+  <!-- ── Results Page ── -->
+  <div class="results-page" id="resultsPage">
+
+    <div class="results-topbar">
+      <button class="back-btn" id="backBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Back
+      </button>
+
+      <div class="results-search-wrap">
+        <input type="text" id="resultsSearchInput" class="results-search-input" placeholder="Search again..."/>
+        <button class="results-search-btn" id="resultsSearchBtn">
+          <span class="b-letter-sm">b</span>
+        </button>
+      </div>
+
+      <span class="results-query-label" id="resultsQueryLabel"></span>
+    </div>
+
+    <div class="results-body">
+
+      <!-- Left panel -->
+      <div class="results-panel" id="resultsPanel">
+
+        <div class="species-card" id="speciesCard">
+          <img class="species-img" id="speciesImg" src="" alt=""/>
+          <div class="species-info">
+            <h3 class="species-title" id="speciesTitle"></h3>
+            <p class="species-desc" id="speciesDesc"></p>
+            <a class="species-link" id="speciesLink" href="" target="_blank">Read more →</a>
+          </div>
+        </div>
+
+        <div class="stats-bar" id="statsBar"></div>
+
+        <div class="cards-list" id="cardsList">
+          <div class="loading-state" id="loadingState">
+            <div class="loading-spinner"></div>
+            <p>Searching across all sources...</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right map -->
+      <div class="map-wrap">
+        <div id="map"></div>
+        <div class="layer-controls">
+          <span class="layer-title">Layers</span>
+          <button class="layer-btn active" data-layer="sightings">Sightings</button>
+          <button class="layer-btn" data-layer="habitat">Habitat Loss</button>
+          <button class="layer-btn" data-layer="urban">Urban Sprawl</button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
 
   <script src="app.js"></script>
 </body>
