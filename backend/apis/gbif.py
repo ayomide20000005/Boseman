@@ -1,89 +1,61 @@
+# backend/apis/gbif.py
+
 import requests
 
 BASE_URL = "https://api.gbif.org/v1"
-
-# GBIF taxon key for Serpentes (all snakes)
 SERPENTES_KEY = 11592253
+
+SNAKE_TERMS = [
+    "snake", "cobra", "mamba", "python", "viper", "boa",
+    "adder", "anaconda", "rattlesnake", "asp", "krait",
+    "boomslang", "puff adder", "green mamba", "black mamba",
+    "king cobra", "rock python", "ball python", "corn snake",
+    "garter snake", "water moccasin", "copperhead", "bushmaster",
+    "fer-de-lance", "taipan", "death adder", "sea snake",
+    "tree snake", "rat snake", "serpent", "serpentes"
+]
+
+
+def _parse_query(query: str) -> tuple[str | None, str | None]:
+    """
+    Returns (species, location) extracted from query.
+    """
+    q = query.lower().strip()
+    found_species = None
+    for term in SNAKE_TERMS:
+        if term in q:
+            found_species = term
+            break
+
+    cleaned = q
+    for term in SNAKE_TERMS:
+        cleaned = cleaned.replace(term.lower(), "").strip()
+    cleaned = " ".join(cleaned.split())
+    found_location = cleaned if cleaned else None
+
+    return found_species, found_location
 
 
 def search_gbif(query: str) -> list:
-    """
-    Search GBIF for snake occurrence records matching the query.
-    Returns a list of normalized occurrence objects for the frontend.
-    """
     try:
-        params = {
-            "q":          query,
-            "taxonKey":   SERPENTES_KEY,  # restrict to snakes only
-            "limit":      50,
-            "hasCoordinate": True,        # only results with coordinates
-            "hasGeospatialIssue": False,  # exclude records with location issues
-        }
+        species, location = _parse_query(query)
 
-        response = requests.get(
-            f"{BASE_URL}/occurrence/search",
-            params=params,
-            timeout=10
-        )
-        response.raise_for_status()
-        data = response.json()
+        # Species only — search globally
+        if species and not location:
+            return _fetch_occurrences(q=species, country=None)
 
-        results = []
-        for occ in data.get("results", []):
+        # Location only — search all snakes, no text filter
+        if location and not species:
+            return _fetch_occurrences(q=location, country=None)
 
-            # ── Extract coordinates ──
-            lat = occ.get("decimalLatitude")
-            lng = occ.get("decimalLongitude")
+        # Both — use full query
+        if species and location:
+            results = _fetch_occurrences(q=f"{species} {location}", country=None)
+            if not results:
+                results = _fetch_occurrences(q=species, country=None)
+            return results
 
-            if lat is None or lng is None:
-                continue
-
-            # ── Extract species info ──
-            species_name = occ.get("species") or occ.get("scientificName", "Unknown species")
-            common_name  = occ.get("vernacularName", species_name)
-
-            # ── Extract location info ──
-            country      = occ.get("country", "")
-            state        = occ.get("stateProvince", "")
-            locality     = occ.get("locality", "")
-
-            location_parts = [p for p in [locality, state, country] if p]
-            location = ", ".join(location_parts) if location_parts else "Unknown location"
-
-            # ── Extract date ──
-            year  = occ.get("year", "")
-            month = occ.get("month", "")
-            day   = occ.get("day", "")
-
-            date_parts = [str(p) for p in [year, month, day] if p]
-            date = "-".join(date_parts) if date_parts else "Unknown date"
-
-            # ── Extract institution ──
-            institution = occ.get("institutionCode", "") or occ.get("datasetName", "Unknown source")
-
-            # ── Extract media/photo ──
-            media = occ.get("media", [])
-            photo_url = None
-            if media:
-                photo_url = media[0].get("identifier")
-
-            results.append({
-                "source":       "GBIF",
-                "id":           occ.get("key"),
-                "species":      species_name,
-                "common_name":  common_name,
-                "location":     location,
-                "country":      country,
-                "latitude":     lat,
-                "longitude":    lng,
-                "date":         date,
-                "photo_url":    photo_url,
-                "institution":  institution,
-                "basis":        occ.get("basisOfRecord", "Unknown"),
-                "url":          f"https://www.gbif.org/occurrence/{occ.get('key')}",
-            })
-
-        return results
+        return _fetch_occurrences(q=query, country=None)
 
     except requests.exceptions.Timeout:
         raise Exception("GBIF request timed out")
@@ -93,3 +65,70 @@ def search_gbif(query: str) -> list:
         raise Exception(f"GBIF HTTP error: {str(e)}")
     except Exception as e:
         raise Exception(f"GBIF error: {str(e)}")
+
+
+def _fetch_occurrences(q: str, country: str | None) -> list:
+    params = {
+        "q":                  q,
+        "taxonKey":           SERPENTES_KEY,
+        "limit":              50,
+        "hasCoordinate":      True,
+        "hasGeospatialIssue": False,
+    }
+    if country:
+        params["country"] = country
+
+    response = requests.get(
+        f"{BASE_URL}/occurrence/search",
+        params=params,
+        timeout=10
+    )
+    response.raise_for_status()
+    data = response.json()
+
+    results = []
+    for occ in data.get("results", []):
+        lat = occ.get("decimalLatitude")
+        lng = occ.get("decimalLongitude")
+        if lat is None or lng is None:
+            continue
+
+        species_name = occ.get("species") or occ.get("scientificName", "Unknown species")
+        common_name  = occ.get("vernacularName", species_name)
+        country      = occ.get("country", "")
+        state        = occ.get("stateProvince", "")
+        locality     = occ.get("locality", "")
+
+        location_parts = [p for p in [locality, state, country] if p]
+        location = ", ".join(location_parts) if location_parts else "Unknown location"
+
+        year  = occ.get("year", "")
+        month = occ.get("month", "")
+        day   = occ.get("day", "")
+        date_parts = [str(p) for p in [year, month, day] if p]
+        date = "-".join(date_parts) if date_parts else "Unknown date"
+
+        institution = occ.get("institutionCode", "") or occ.get("datasetName", "Unknown source")
+
+        media = occ.get("media", [])
+        photo_url = None
+        if media:
+            photo_url = media[0].get("identifier")
+
+        results.append({
+            "source":      "GBIF",
+            "id":          occ.get("key"),
+            "species":     species_name,
+            "common_name": common_name,
+            "location":    location,
+            "country":     country,
+            "latitude":    lat,
+            "longitude":   lng,
+            "date":        date,
+            "photo_url":   photo_url,
+            "institution": institution,
+            "basis":       occ.get("basisOfRecord", "Unknown"),
+            "url":         f"https://www.gbif.org/occurrence/{occ.get('key')}",
+        })
+
+    return results

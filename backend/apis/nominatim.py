@@ -1,3 +1,5 @@
+# backend/apis/nominatim.py
+
 import requests
 from difflib import SequenceMatcher
 
@@ -19,25 +21,31 @@ SNAKE_TERMS = [
 ]
 
 
+def _parse_query(query: str) -> str | None:
+    """
+    Strip snake terms to extract location. Returns None if nothing left.
+    """
+    cleaned = query.lower()
+    for term in SNAKE_TERMS:
+        cleaned = cleaned.replace(term.lower(), "").strip()
+    cleaned = " ".join(cleaned.split())
+    return cleaned if cleaned else None
+
+
 def search_nominatim(query: str) -> dict | None:
-    """
-    Geocode a location from the search query using Nominatim.
-    Strips snake terms, prioritizes cities, picks best name match.
-    """
     try:
-        # ── Step 1: Clean the query ──
-        cleaned = _clean_location(query)
-        if not cleaned:
-            cleaned = query
+        location = _parse_query(query)
 
-        # ── Step 2: Try each word in the cleaned query ──
-        # Try the full cleaned query first
-        candidates = _fetch_candidates(cleaned)
-        best = _pick_best(candidates, cleaned)
+        # If nothing left after stripping snake terms
+        # the query is species-only — no location to geocode
+        if not location:
+            return None
 
-        # ── Step 3: If no good match try each word separately ──
+        candidates = _fetch_candidates(location)
+        best = _pick_best(candidates, location)
+
         if not best:
-            words = cleaned.split()
+            words = location.split()
             for word in reversed(words):
                 if len(word) > 2:
                     candidates = _fetch_candidates(word)
@@ -57,17 +65,7 @@ def search_nominatim(query: str) -> dict | None:
         raise Exception(f"Nominatim error: {str(e)}")
 
 
-def _clean_location(query: str) -> str:
-    """Strip snake terms to extract the location part."""
-    cleaned = query
-    for term in SNAKE_TERMS:
-        cleaned = cleaned.lower().replace(term.lower(), "").strip()
-    cleaned = " ".join(cleaned.split())
-    return cleaned
-
-
 def _fetch_candidates(query: str) -> list:
-    """Fetch top 10 location candidates from Nominatim."""
     if not query or len(query.strip()) < 2:
         return []
 
@@ -89,27 +87,21 @@ def _fetch_candidates(query: str) -> list:
 
 
 def _pick_best(candidates: list, query: str) -> dict | None:
-    """
-    Pick the best matching location from candidates.
-    Prioritizes cities and towns over countries.
-    Uses name similarity to avoid wrong matches like Lagos vs Laos.
-    """
     if not candidates:
         return None
 
-    # ── Priority order for place types ──
     type_priority = {
-        "city":             10,
-        "town":             9,
-        "municipality":     8,
-        "administrative":   7,
-        "village":          6,
-        "suburb":           5,
-        "county":           4,
-        "state":            3,
-        "country":          2,
-        "water":            1,
-        "other":            0,
+        "city":           10,
+        "town":            9,
+        "municipality":    8,
+        "administrative":  7,
+        "village":         6,
+        "suburb":          5,
+        "county":          4,
+        "state":           3,
+        "country":         2,
+        "water":           1,
+        "other":           0,
     }
 
     scored = []
@@ -119,37 +111,25 @@ def _pick_best(candidates: list, query: str) -> dict | None:
         address     = place.get("address", {})
         importance  = float(place.get("importance", 0))
 
-        # Get the primary name of this place
         city    = address.get("city") or address.get("town") or address.get("village") or ""
         country = address.get("country", "")
         name    = city or place.get("display_name", "").split(",")[0].strip()
 
-        # ── Name similarity score (0 to 1) ──
-        # This prevents "Lagos" from matching "Laos"
-        similarity = SequenceMatcher(
-            None,
-            query.lower(),
-            name.lower()
-        ).ratio()
+        similarity = SequenceMatcher(None, query.lower(), name.lower()).ratio()
 
-        # ── Only keep results where name is similar enough ──
         if similarity < 0.6:
             continue
 
-        # ── Type score ──
-        type_score = type_priority.get(place_type, 0)
+        type_score  = type_priority.get(place_type, 0)
         if place_class == "place":
             type_score += 2
 
-        # ── Final score combines similarity + type + importance ──
         final_score = (similarity * 5) + type_score + (importance * 2)
-
         scored.append((final_score, place, city, country, address))
 
     if not scored:
         return None
 
-    # Pick highest scored
     scored.sort(key=lambda x: x[0], reverse=True)
     _, place, city, country, address = scored[0]
 

@@ -1,3 +1,5 @@
+# backend/apis/copernicus.py
+
 import os
 import requests
 from dotenv import load_dotenv
@@ -12,6 +14,16 @@ STAC_URL   = "https://catalogue.dataspace.copernicus.eu/stac/collections/clms_ur
 WMS_URL    = "https://mapserver.dataspace.copernicus.eu/ogc"
 WMS_LAYER  = "CLMS_UA_LCU_S2021_V025ha"
 
+SNAKE_TERMS = [
+    "snake", "cobra", "mamba", "python", "viper", "boa",
+    "adder", "anaconda", "rattlesnake", "asp", "krait",
+    "boomslang", "puff adder", "green mamba", "black mamba",
+    "king cobra", "rock python", "ball python", "corn snake",
+    "garter snake", "water moccasin", "copperhead", "bushmaster",
+    "fer-de-lance", "taipan", "death adder", "sea snake",
+    "tree snake", "rat snake", "serpent", "serpentes"
+]
+
 
 def _get_access_token() -> str:
     payload = {
@@ -24,24 +36,72 @@ def _get_access_token() -> str:
     return response.json()["access_token"]
 
 
-def get_copernicus_data(query: str) -> dict | None:
-    """
-    Query Copernicus Urban Atlas STAC API for land cover data.
-    Returns WMS layer info and feature bboxes for the Urban Sprawl map layer.
-    """
-    try:
-        # ── Step 1: Get access token ──
-        token = _get_access_token()
+def _extract_location(query: str) -> str | None:
+    cleaned = query.lower()
+    for term in SNAKE_TERMS:
+        cleaned = cleaned.replace(term.lower(), "").strip()
+    cleaned = " ".join(cleaned.split())
+    return cleaned if cleaned else None
 
+
+def _geocode_location(location: str) -> dict | None:
+    try:
+        response = requests.get(
+            "https://nominatim.openstreetmap.org/search",
+            headers={"User-Agent": "Boseman/1.0"},
+            params={"q": location, "format": "json", "limit": 1},
+            timeout=10
+        )
+        results = response.json()
+        if results:
+            bb = results[0].get("boundingbox", [])
+            if len(bb) == 4:
+                return {
+                    "min_lat": float(bb[0]),
+                    "max_lat": float(bb[1]),
+                    "min_lng": float(bb[2]),
+                    "max_lng": float(bb[3]),
+                    "lat":     float(results[0].get("lat", 0)),
+                    "lng":     float(results[0].get("lon", 0)),
+                }
+    except Exception:
+        pass
+    return None
+
+
+def get_copernicus_data(query: str) -> dict | None:
+    try:
+        location_str = _extract_location(query)
+
+        # Species only query — no location, skip Copernicus
+        if not location_str:
+            return {
+                "source":   "Copernicus",
+                "query":    query,
+                "message":  "No location in query — Copernicus requires a location",
+                "features": [],
+                "wms_url":  None,
+                "wms_layer": WMS_LAYER,
+            }
+
+        token = _get_access_token()
         headers = {
             "Authorization": f"Bearer {token}",
             "Accept":        "application/json"
         }
 
-        # ── Step 2: Query STAC items — no heavy catalogue, just metadata ──
-        params = {
-            "limit": 10,
-        }
+        location = _geocode_location(location_str)
+        params   = {"limit": 10}
+
+        if location:
+            pad  = 2.0
+            bbox = (
+                f"{location['min_lng'] - pad},"
+                f"{location['min_lat'] - pad},"
+                f"{location['max_lng'] + pad},"
+                f"{location['max_lat'] + pad}"
+            )
+            params["bbox"] = bbox
 
         response = requests.get(
             STAC_URL,
@@ -50,32 +110,27 @@ def get_copernicus_data(query: str) -> dict | None:
             timeout=30
         )
         response.raise_for_status()
-        data = response.json()
-
+        data     = response.json()
         features = data.get("features", [])
 
         if not features:
             return {
                 "source":    "Copernicus",
                 "query":     query,
-                "message":   "No urban land cover data found",
+                "message":   "No urban land cover data found for this location",
                 "features":  [],
                 "wms_url":   None,
                 "wms_layer": WMS_LAYER,
             }
 
-        # ── Step 3: Normalize features ──
         normalized = []
         for feature in features:
             props    = feature.get("properties", {})
             bbox     = feature.get("bbox", [])
             geometry = feature.get("geometry", {})
-
-            # Extract WMS link from feature links
             links    = feature.get("links", [])
-            wms_link = next((l.get("href") for l in links if l.get("rel") == "wms"), WMS_URL)
 
-            # Get WMS layers from link
+            wms_link   = next((l.get("href") for l in links if l.get("rel") == "wms"), WMS_URL)
             wms_layers = next(
                 (l.get("wms:layers", [WMS_LAYER]) for l in links if l.get("rel") == "wms"),
                 [WMS_LAYER]
@@ -93,23 +148,23 @@ def get_copernicus_data(query: str) -> dict | None:
             private = props.get("_private", {}).get("odata", {})
 
             normalized.append({
-                "id":           feature.get("id", ""),
-                "region":       props.get("region:name", private.get("fuaName", "Unknown")),
-                "country":      props.get("region:country", private.get("countryCode", "")),
-                "date":         props.get("datetime", "2021-01-01"),
-                "bbox":         bbox_dict,
-                "geometry":     geometry,
-                "wms_url":      wms_link,
-                "wms_layers":   wms_layers,
+                "id":         feature.get("id", ""),
+                "region":     props.get("region:name", private.get("fuaName", "Unknown")),
+                "country":    props.get("region:country", private.get("countryCode", "")),
+                "date":       props.get("datetime", "2021-01-01"),
+                "bbox":       bbox_dict,
+                "geometry":   geometry,
+                "wms_url":    wms_link,
+                "wms_layers": wms_layers,
             })
 
         return {
-            "source":      "Copernicus",
-            "query":       query,
-            "layer_type":  "urban_sprawl",
-            "description": "Urban Atlas land cover and land use data — European urban areas 2021",
-            "wms_url":     WMS_URL,
-            "wms_layer":   WMS_LAYER,
+            "source":         "Copernicus",
+            "query":          query,
+            "layer_type":     "urban_sprawl",
+            "description":    "Urban Atlas land cover and land use data — European urban areas 2021",
+            "wms_url":        WMS_URL,
+            "wms_layer":      WMS_LAYER,
             "wms_params": {
                 "SERVICE":     "WMS",
                 "VERSION":     "1.3.0",
@@ -119,6 +174,7 @@ def get_copernicus_data(query: str) -> dict | None:
                 "TRANSPARENT": "true",
                 "CRS":         "EPSG:4326",
             },
+            "location":       location,
             "features":       normalized,
             "total_features": len(normalized),
         }

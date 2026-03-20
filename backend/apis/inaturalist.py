@@ -25,37 +25,48 @@ SNAKE_TERMS = [
 ]
 
 
-def _clean_location(query: str) -> str:
+def _parse_query(query: str) -> tuple[str | None, str | None]:
     """
-    Strip snake-related terms from query to extract the location part.
+    Returns (species, location) extracted from query.
+    Either can be None if not found.
     """
-    cleaned = query
+    q = query.lower().strip()
+    found_species = None
     for term in SNAKE_TERMS:
-        cleaned = cleaned.lower().replace(term.lower(), "").strip()
-    # Clean up extra spaces
+        if term in q:
+            found_species = term
+            break
+
+    cleaned = q
+    for term in SNAKE_TERMS:
+        cleaned = cleaned.replace(term.lower(), "").strip()
     cleaned = " ".join(cleaned.split())
-    return cleaned if cleaned else query
+    found_location = cleaned if cleaned else None
+
+    return found_species, found_location
 
 
 def search_inaturalist(query: str) -> list:
-    """
-    Search iNaturalist for snake observations matching the query.
-    First tries with location-only query, then falls back to full query.
-    Returns a list of normalized sighting objects for the frontend.
-    """
     try:
-        # Always clean location first and search by place
-        location = _clean_location(query)
-        if not location or location.lower() == query.lower():
-            location = query
+        species, location = _parse_query(query)
 
-        results = _fetch_observations(location)
+        # Species only — search globally
+        if species and not location:
+            return _fetch_observations(place_guess=None, taxon_id=85553)
 
-        # Fallback: if nothing came back try full query
-        if not results:
-            results = _fetch_observations(query)
+        # Location only — search all snakes in that location
+        if location and not species:
+            return _fetch_observations(place_guess=location, taxon_id=85553)
 
-        return results
+        # Both — search species in location
+        if species and location:
+            results = _fetch_observations(place_guess=location, taxon_id=85553)
+            if not results:
+                results = _fetch_observations(place_guess=None, taxon_id=85553)
+            return results
+
+        # Fallback
+        return _fetch_observations(place_guess=query, taxon_id=85553)
 
     except requests.exceptions.Timeout:
         raise Exception("iNaturalist request timed out")
@@ -67,20 +78,17 @@ def search_inaturalist(query: str) -> list:
         raise Exception(f"iNaturalist error: {str(e)}")
 
 
-def _fetch_observations(query: str) -> list:
-    """
-    Internal function to fetch snake-only observations from iNaturalist.
-    Uses taxon_id 85553 (Serpentes) to strictly restrict to snakes only.
-    """
+def _fetch_observations(place_guess: str | None, taxon_id: int) -> list:
     params = {
-        "taxon_id":    85553,
-        "place_guess": query,
-        "per_page":    50,
-        "order":       "desc",
-        "order_by":    "created_at",
-        "has[]":       "geo",
-        "photos":      "true",
+        "taxon_id":  taxon_id,
+        "per_page":  50,
+        "order":     "desc",
+        "order_by":  "created_at",
+        "has[]":     "geo",
+        "photos":    "true",
     }
+    if place_guess:
+        params["place_guess"] = place_guess
 
     response = requests.get(
         f"{BASE_URL}/observations",
@@ -93,7 +101,6 @@ def _fetch_observations(query: str) -> list:
 
     results = []
     for obs in data.get("results", []):
-        # ── Extract coordinates ──
         coords = obs.get("location", "")
         lat, lng = None, None
         if coords:
@@ -108,23 +115,17 @@ def _fetch_observations(query: str) -> list:
         if lat is None or lng is None:
             continue
 
-        # ── Extract photo ──
         photo_url = None
         photos = obs.get("photos", [])
         if photos:
             photo_url = photos[0].get("url", "").replace("square", "medium")
 
-        # ── Extract species name ──
-        taxon = obs.get("taxon", {})
+        taxon        = obs.get("taxon", {})
         species_name = taxon.get("name", "Unknown species")
         common_name  = taxon.get("preferred_common_name", species_name)
-
-        # ── Extract place ──
-        place = obs.get("place_guess", "Unknown location")
-
-        # ── Extract observer ──
-        user     = obs.get("user", {})
-        observer = user.get("login", "Unknown observer")
+        place        = obs.get("place_guess", "Unknown location")
+        user         = obs.get("user", {})
+        observer     = user.get("login", "Unknown observer")
 
         results.append({
             "source":        "iNaturalist",
