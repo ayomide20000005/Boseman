@@ -1,3 +1,5 @@
+# backend/apis/inaturalist.py
+
 import os
 import requests
 from dotenv import load_dotenv
@@ -38,18 +40,20 @@ def _clean_location(query: str) -> str:
 def search_inaturalist(query: str) -> list:
     """
     Search iNaturalist for snake observations matching the query.
-    First tries with full query, then with location-only query.
+    First tries with location-only query, then falls back to full query.
     Returns a list of normalized sighting objects for the frontend.
     """
     try:
-        # ── Try 1: Search with full query ──
-        results = _fetch_observations(query)
+        # Always clean location first and search by place
+        location = _clean_location(query)
+        if not location or location.lower() == query.lower():
+            location = query
 
-        # ── Try 2: If no results, try with location only ──
+        results = _fetch_observations(location)
+
+        # Fallback: if nothing came back try full query
         if not results:
-            location = _clean_location(query)
-            if location and location.lower() != query.lower():
-                results = _fetch_observations(location)
+            results = _fetch_observations(query)
 
         return results
 
@@ -65,16 +69,17 @@ def search_inaturalist(query: str) -> list:
 
 def _fetch_observations(query: str) -> list:
     """
-    Internal function to fetch observations from iNaturalist.
+    Internal function to fetch snake-only observations from iNaturalist.
+    Uses taxon_id 85553 (Serpentes) to strictly restrict to snakes only.
     """
     params = {
-        "q":          query,
-        "taxon_name": "Serpentes",
-        "per_page":   50,
-        "order":      "desc",
-        "order_by":   "created_at",
-        "has[]":      "geo",
-        "photos":     "true",
+        "taxon_id":    85553,
+        "place_guess": query,
+        "per_page":    50,
+        "order":       "desc",
+        "order_by":    "created_at",
+        "has[]":       "geo",
+        "photos":      "true",
     }
 
     response = requests.get(

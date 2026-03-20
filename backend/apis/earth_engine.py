@@ -1,143 +1,50 @@
+# backend/apis/earth_engine.py
+
 import os
-import requests
+import ee
 from dotenv import load_dotenv
 
 load_dotenv()
 
-GEE_API_KEY  = os.getenv("GEE_API_KEY")
-GEE_PROJECT  = os.getenv("GEE_PROJECT")
+GEE_PROJECT      = os.getenv("GEE_PROJECT")
+SERVICE_ACCOUNT  = "boseman@eternal-galaxy-485500-g4.iam.gserviceaccount.com"
+KEY_FILE         = os.path.join(os.path.dirname(__file__), "..", "eternal-galaxy-485500-g4-6f1c7aa78004.json")
 
-BASE_URL = "https://earthengine.googleapis.com/v1"
+
+def _init_ee():
+    """Initialize Earth Engine with service account credentials."""
+    credentials = ee.ServiceAccountCredentials(SERVICE_ACCOUNT, KEY_FILE)
+    ee.Initialize(credentials, project=GEE_PROJECT)
 
 
 def get_earth_engine_data(query: str) -> dict | None:
     """
-    Query Google Earth Engine REST API for land cover and
-    vegetation loss data relevant to the searched location.
+    Query Google Earth Engine for land cover and vegetation loss data.
     Returns normalized data for the Habitat Loss map layer.
     """
     try:
-        # ── Step 1: Search for relevant assets ──
-        search_url = f"{BASE_URL}/projects/{GEE_PROJECT}/assets:search"
+        _init_ee()
 
-        search_params = {
-            "key":   GEE_API_KEY,
-            "query": query,
-        }
-
-        search_response = requests.get(
-            search_url,
-            params=search_params,
-            timeout=15
+        # ── Forest loss layer ──
+        forest = (
+            ee.Image("UMD/hansen/global_forest_change_2023_v1_11")
+            .select("lossyear")
+            .visualize(min=0, max=23, palette=["ffffff", "ffcc00", "ff6600", "cc0000"])
         )
 
-        # ── Step 2: Get NDVI / vegetation data using known GEE datasets ──
-        # Use the Hansen Global Forest Change dataset for habitat loss
-        asset_url = f"{BASE_URL}/projects/{GEE_PROJECT}/maps"
+        forest_map  = forest.getMapId()
+        tile_url    = forest_map["tile_fetcher"].url_format
 
-        payload = {
-            "expression": {
-                "functionInvocationValue": {
-                    "functionName": "Image.visualize",
-                    "arguments": {
-                        "this": {
-                            "functionInvocationValue": {
-                                "functionName": "Image.select",
-                                "arguments": {
-                                    "this": {
-                                        "functionInvocationValue": {
-                                            "functionName": "Image.load",
-                                            "arguments": {
-                                                "id": {
-                                                    "constantValue": "UMD/hansen/global_forest_change_2023_v1_11"
-                                                }
-                                            }
-                                        }
-                                    },
-                                    "bandSelectors": {
-                                        "constantValue": ["lossyear"]
-                                    }
-                                }
-                            }
-                        },
-                        "min":     {"constantValue": 0},
-                        "max":     {"constantValue": 23},
-                        "palette": {"constantValue": ["ffffff", "ffcc00", "ff6600", "cc0000"]}
-                    }
-                }
-            }
-        }
-
-        map_response = requests.post(
-            asset_url,
-            params={"key": GEE_API_KEY},
-            json=payload,
-            timeout=20
+        # ── NDVI layer ──
+        ndvi = (
+            ee.ImageCollection("MODIS/006/MOD13A2")
+            .select("NDVI")
+            .mean()
+            .visualize(min=0, max=9000, palette=["brown", "yellow", "green"])
         )
 
-        tile_url = None
-        if map_response.status_code == 200:
-            map_data = map_response.json()
-            tile_url = map_data.get("tilesetToken") or map_data.get("name")
-
-            # Build the tile URL for Leaflet
-            if tile_url:
-                tile_url = f"https://earthengine.googleapis.com/v1/{tile_url}/tiles/{{z}}/{{x}}/{{y}}?key={GEE_API_KEY}"
-
-        # ── Step 3: Get NDVI vegetation health data ──
-        ndvi_payload = {
-            "expression": {
-                "functionInvocationValue": {
-                    "functionName": "Image.visualize",
-                    "arguments": {
-                        "this": {
-                            "functionInvocationValue": {
-                                "functionName": "ImageCollection.mean",
-                                "arguments": {
-                                    "this": {
-                                        "functionInvocationValue": {
-                                            "functionName": "ImageCollection.select",
-                                            "arguments": {
-                                                "this": {
-                                                    "functionInvocationValue": {
-                                                        "functionName": "ImageCollection.load",
-                                                        "arguments": {
-                                                            "id": {
-                                                                "constantValue": "MODIS/006/MOD13A2"
-                                                            }
-                                                        }
-                                                    }
-                                                },
-                                                "bandSelectors": {
-                                                    "constantValue": ["NDVI"]
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "min":     {"constantValue": 0},
-                        "max":     {"constantValue": 9000},
-                        "palette": {"constantValue": ["brown", "yellow", "green"]}
-                    }
-                }
-            }
-        }
-
-        ndvi_response = requests.post(
-            asset_url,
-            params={"key": GEE_API_KEY},
-            json=ndvi_payload,
-            timeout=20
-        )
-
-        ndvi_tile_url = None
-        if ndvi_response.status_code == 200:
-            ndvi_data     = ndvi_response.json()
-            ndvi_token    = ndvi_data.get("tilesetToken") or ndvi_data.get("name")
-            if ndvi_token:
-                ndvi_tile_url = f"https://earthengine.googleapis.com/v1/{ndvi_token}/tiles/{{z}}/{{x}}/{{y}}?key={GEE_API_KEY}"
+        ndvi_map      = ndvi.getMapId()
+        ndvi_tile_url = ndvi_map["tile_fetcher"].url_format
 
         return {
             "source":         "Google Earth Engine",
@@ -157,11 +64,5 @@ def get_earth_engine_data(query: str) -> dict | None:
             ]
         }
 
-    except requests.exceptions.Timeout:
-        raise Exception("Google Earth Engine request timed out")
-    except requests.exceptions.ConnectionError:
-        raise Exception("Could not connect to Google Earth Engine API")
-    except requests.exceptions.HTTPError as e:
-        raise Exception(f"Google Earth Engine HTTP error: {str(e)}")
     except Exception as e:
         raise Exception(f"Google Earth Engine error: {str(e)}")
