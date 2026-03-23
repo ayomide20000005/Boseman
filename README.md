@@ -5,3 +5,8 @@ A detailed proposed paper published on zenodo about this
 
 ![lagos](https://github.com/user-attachments/assets/0d2000bb-c524-4fce-b6de-47e625db3af5)
 
+
+
+
+![lagos 2](https://github.com/user-attachments/assets/83851e73-164a-48d4-bc10-2ad2d6e66729)
+
