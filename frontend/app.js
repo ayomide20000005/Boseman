@@ -31,21 +31,17 @@ const riskLabel          = document.getElementById('riskLabel');
 const riskInterpretation = document.getElementById('riskInterpretation');
 const riskComponents     = document.getElementById('riskComponents');
 const aiToggle           = document.getElementById('aiToggle');
-const aiToggleLabel      = document.getElementById('aiToggleLabel');
 const aiChevron          = document.getElementById('aiChevron');
 const aiPanel            = document.getElementById('aiPanel');
 const aiMessages         = document.getElementById('aiMessages');
 const aiInput            = document.getElementById('aiInput');
 const aiSendBtn          = document.getElementById('aiSendBtn');
 const activePersonaBadge = document.getElementById('activePersonaBadge');
-const personaTrigger     = document.getElementById('personaTrigger');
-const personaTriggerIcon = document.getElementById('personaTriggerIcon');
-const personaTriggerLabel= document.getElementById('personaTriggerLabel');
-const personaCaret       = document.getElementById('personaCaret');
-const personaDropdown    = document.getElementById('personaDropdown');
-const mapFullscreenBtn   = document.getElementById('mapFullscreenBtn');
-const mapFullscreenOverlay = document.getElementById('mapFullscreenOverlay');
-const mapFullscreenClose = document.getElementById('mapFullscreenClose');
+const mapExpandBtn       = document.getElementById('mapExpandBtn');
+const mapCollapseBtn     = document.getElementById('mapCollapseBtn');
+const resultsBody        = document.getElementById('resultsBody');
+const resultsPanel       = document.getElementById('resultsPanel');
+const scrollHint         = document.getElementById('scrollHint');
 const speciesToggle      = document.getElementById('speciesToggle');
 const speciesChevron     = document.getElementById('speciesChevron');
 const speciesContent     = document.getElementById('speciesContent');
@@ -57,73 +53,48 @@ const cardsToggleLabel   = document.getElementById('cardsToggleLabel');
 const activeFilters = new Set();
 let toolsOpen       = false;
 let plusOpen        = false;
-let personaOpen     = false;
-let map             = null;
-let mapFull         = null;
-let markersLayer    = null;
-let markersLayerFull= null;
+let mapOpen         = false;
 let aiOpen          = false;
 let aiHistory       = [];
 let currentSearchData = null;
 let currentQuery    = '';
 let activePersona   = 'Researcher';
 let lastResults     = [];
+let map             = null;
+let markersLayer    = null;
 
 // ══════════════════════════════
 // PERSONA CONFIG
 // ══════════════════════════════
 
 const PERSONA_CONFIG = {
-  'Researcher':       { icon: '🔬', showComponents: true,  aiLabel: 'Get AI analysis',              cardsLabel: 'Sightings & Occurrences' },
-  'Health Worker':    { icon: '🏥', showComponents: true,  aiLabel: 'Get clinical AI summary',       cardsLabel: 'Active Sightings' },
-  'Resident':         { icon: '🏘️', showComponents: false, aiLabel: 'Ask AI if your area is safe',   cardsLabel: 'Nearby Sightings' },
-  'Urban Planner':    { icon: '🏙️', showComponents: true,  aiLabel: 'Get displacement AI briefing',  cardsLabel: 'Displacement Data' },
-  'Wildlife Responder':{ icon: '🐍', showComponents: true, aiLabel: 'Get field intelligence',         cardsLabel: 'Sighting Clusters' },
-  'Farmer':           { icon: '🌾', showComponents: false, aiLabel: 'Ask AI about farm threats',      cardsLabel: 'Nearby Sightings' },
-  'Journalist':       { icon: '📰', showComponents: true,  aiLabel: 'Get AI story briefing',          cardsLabel: 'Key Data Points' },
-  'Student':          { icon: '📚', showComponents: true,  aiLabel: 'Ask AI to explain results',      cardsLabel: 'All Sightings' },
-  'Tour Guide':       { icon: '🗺️', showComponents: false, aiLabel: 'Get AI safety briefing',         cardsLabel: 'Active Areas' },
-  'First Responder':  { icon: '🚨', showComponents: false, aiLabel: '⚠️ Emergency AI briefing',       cardsLabel: 'Active Threats' },
+  'Researcher':        { icon: '🔬', showComponents: true,  cardsLabel: 'Sightings & Occurrences' },
+  'Health Worker':     { icon: '🏥', showComponents: true,  cardsLabel: 'Active Sightings'         },
+  'Resident':          { icon: '🏘️', showComponents: false, cardsLabel: 'Nearby Sightings'         },
+  'Urban Planner':     { icon: '🏙️', showComponents: true,  cardsLabel: 'Displacement Data'        },
+  'Wildlife Responder':{ icon: '🐍', showComponents: true,  cardsLabel: 'Sighting Clusters'        },
+  'Farmer':            { icon: '🌾', showComponents: false, cardsLabel: 'Nearby Sightings'         },
+  'Journalist':        { icon: '📰', showComponents: true,  cardsLabel: 'Key Data Points'          },
+  'Student':           { icon: '📚', showComponents: true,  cardsLabel: 'All Sightings'            },
+  'Tour Guide':        { icon: '🗺️', showComponents: false, cardsLabel: 'Active Areas'             },
+  'First Responder':   { icon: '🚨', showComponents: false, cardsLabel: 'Active Threats'           },
 };
 
 const VENOMOUS_TERMS = [
-  'cobra', 'mamba', 'viper', 'adder', 'rattlesnake', 'krait',
-  'boomslang', 'puff adder', 'king cobra', 'taipan', 'death adder',
-  'bushmaster', 'fer-de-lance', 'water moccasin', 'copperhead'
+  'cobra','mamba','viper','adder','rattlesnake','krait',
+  'boomslang','puff adder','king cobra','taipan','death adder',
+  'bushmaster','fer-de-lance','water moccasin','copperhead'
 ];
 
 // ══════════════════════════════
-// PERSONA DROPDOWN
+// PERSONA LIST
 // ══════════════════════════════
 
-personaTrigger.addEventListener('click', (e) => {
-  e.stopPropagation();
-  personaOpen = !personaOpen;
-  personaDropdown.classList.toggle('open', personaOpen);
-  personaTrigger.classList.toggle('open', personaOpen);
-  personaCaret.classList.toggle('open', personaOpen);
-});
-
-document.addEventListener('click', (e) => {
-  if (!personaTrigger.contains(e.target) && !personaDropdown.contains(e.target)) {
-    personaOpen = false;
-    personaDropdown.classList.remove('open');
-    personaTrigger.classList.remove('open');
-    personaCaret.classList.remove('open');
-  }
-});
-
-document.querySelectorAll('.persona-dropdown-item').forEach(item => {
+document.querySelectorAll('.persona-item').forEach(item => {
   item.addEventListener('click', () => {
-    document.querySelectorAll('.persona-dropdown-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.persona-item').forEach(i => i.classList.remove('active'));
     item.classList.add('active');
     activePersona = item.dataset.persona;
-    personaTriggerIcon.textContent = item.dataset.icon;
-    personaTriggerLabel.textContent = activePersona;
-    personaOpen = false;
-    personaDropdown.classList.remove('open');
-    personaTrigger.classList.remove('open');
-    personaCaret.classList.remove('open');
   });
 });
 
@@ -153,17 +124,13 @@ document.addEventListener('click', (e) => {
   }
 });
 
-imageUpload.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+imageUpload.addEventListener('change', () => {
   plusOpen = false;
   uploadDropdown.classList.remove('open');
   plusBtn.classList.remove('open');
 });
 
-fileUpload.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+fileUpload.addEventListener('change', () => {
   plusOpen = false;
   uploadDropdown.classList.remove('open');
   plusBtn.classList.remove('open');
@@ -172,20 +139,15 @@ fileUpload.addEventListener('change', (e) => {
 document.querySelectorAll('.tool-chip[data-tool]').forEach(chip => {
   chip.addEventListener('click', () => {
     const tool = chip.dataset.tool;
-    if (activeFilters.has(tool)) {
-      activeFilters.delete(tool);
-      chip.classList.remove('active');
-    } else {
-      activeFilters.add(tool);
-      chip.classList.add('active');
-    }
+    if (activeFilters.has(tool)) { activeFilters.delete(tool); chip.classList.remove('active'); }
+    else { activeFilters.add(tool); chip.classList.add('active'); }
     renderActiveTags();
   });
 });
 
 function renderActiveTags() {
   activeBar.innerHTML = '';
-  const labels = { species: 'Species', location: 'Location', hospitals: 'Hospitals', habitat: 'Habitat Loss', urban: 'Urban Sprawl' };
+  const labels = { species:'Species', location:'Location', hospitals:'Hospitals', habitat:'Habitat Loss', urban:'Urban Sprawl' };
   activeFilters.forEach(filter => {
     const tag = document.createElement('span');
     tag.className = 'active-tag';
@@ -208,6 +170,36 @@ cardsToggle.addEventListener('click', () => {
   cardsChevron.classList.toggle('open', open);
 });
 
+// Scroll hint click scrolls panel down
+scrollHint.addEventListener('click', () => {
+  resultsPanel.scrollBy({ top: 300, behavior: 'smooth' });
+});
+
+// Show/hide scroll hint based on scroll position
+resultsPanel.addEventListener('scroll', () => {
+  const atBottom = resultsPanel.scrollTop + resultsPanel.clientHeight >= resultsPanel.scrollHeight - 40;
+  if (atBottom) {
+    scrollHint.classList.remove('visible');
+  }
+});
+
+// ══════════════════════════════
+// MAP EXPAND / COLLAPSE
+// ══════════════════════════════
+
+mapExpandBtn.addEventListener('click', () => {
+  mapOpen = true;
+  resultsBody.classList.add('map-open');
+  initMap();
+  setTimeout(() => { if (map) map.invalidateSize(); }, 380);
+});
+
+mapCollapseBtn.addEventListener('click', () => {
+  mapOpen = false;
+  resultsBody.classList.remove('map-open');
+  setTimeout(() => { if (map) map.invalidateSize(); }, 380);
+});
+
 // ══════════════════════════════
 // SEARCH TRIGGER
 // ══════════════════════════════
@@ -216,8 +208,8 @@ function triggerSearch(query) {
   if (!query) query = searchInput.value.trim();
   if (!query) return;
 
-  currentQuery  = query;
-  aiHistory     = [];
+  currentQuery = query;
+  aiHistory    = [];
 
   searchBtn.classList.remove('rolling');
   void searchBtn.offsetWidth;
@@ -236,6 +228,8 @@ resultsSearchInput.addEventListener('keydown', e => { if (e.key === 'Enter') { c
 backBtn.addEventListener('click', () => {
   resultsPage.classList.remove('visible');
   searchStage.classList.remove('hidden');
+  mapOpen = false;
+  resultsBody.classList.remove('map-open');
 });
 
 // ══════════════════════════════
@@ -248,8 +242,7 @@ function showResultsPage(query) {
   resultsQueryLabel.textContent = `"${query}"`;
   resultsSearchInput.value = query;
 
-  // Apply persona
-  applyPersonaToBody(activePersona);
+  applyPersona(activePersona);
 
   // Reset
   cardsList.innerHTML = '';
@@ -257,40 +250,42 @@ function showResultsPage(query) {
   loadingState.style.display = 'flex';
   statsBar.innerHTML = '';
   riskHero.style.display = 'none';
+  speciesCard.style.display = 'none';
   aiMessages.innerHTML = '';
   aiOpen = false;
   aiPanel.classList.remove('open');
   aiChevron.classList.remove('open');
-
-  // Species section closed by default
   speciesContent.classList.remove('open');
   speciesChevron.classList.remove('open');
-  speciesCard.style.display = 'none';
-
-  // Cards open by default
   cardsContent.classList.add('open');
   cardsChevron.classList.add('open');
+  scrollHint.classList.remove('visible');
 
-  initMap();
+  // Collapse map on new search
+  mapOpen = false;
+  resultsBody.classList.remove('map-open');
+
+  // Reset tile layers
+  if (habitatLayer && map) { map.removeLayer(habitatLayer); habitatLayer = null; }
+  if (urbanLayer   && map) { map.removeLayer(urbanLayer);   urbanLayer   = null; }
+  if (ndviLayer    && map) { map.removeLayer(ndviLayer);    ndviLayer    = null; }
+  document.querySelectorAll('.layer-btn').forEach(b => {
+    if (b.dataset.layer !== 'sightings') b.classList.remove('active');
+  });
 }
 
-function applyPersonaToBody(persona) {
+function applyPersona(persona) {
   document.body.className = document.body.className
-    .split(' ')
-    .filter(c => !c.startsWith('persona-'))
-    .join(' ');
-
-  const slug = persona.toLowerCase().replace(/\s+/g, '-');
-  document.body.classList.add(`persona-${slug}`);
+    .split(' ').filter(c => !c.startsWith('persona-')).join(' ');
+  document.body.classList.add(`persona-${persona.toLowerCase().replace(/\s+/g, '-')}`);
 
   const config = PERSONA_CONFIG[persona] || {};
   activePersonaBadge.innerHTML = `<span>${config.icon || ''}</span><span>${persona}</span>`;
-  if (aiToggleLabel) aiToggleLabel.textContent = config.aiLabel || 'Ask AI about these results';
   if (cardsToggleLabel) cardsToggleLabel.textContent = config.cardsLabel || 'Sightings';
 }
 
 // ══════════════════════════════
-// FETCH RESULTS
+// FETCH
 // ══════════════════════════════
 
 function fetchResults(query, filters) {
@@ -300,10 +295,7 @@ function fetchResults(query, filters) {
     body: JSON.stringify({ query, filters })
   })
   .then(res => res.json())
-  .then(data => {
-    currentSearchData = data;
-    renderResults(data);
-  })
+  .then(data => { currentSearchData = data; renderResults(data); })
   .catch(err => {
     console.error('Search error:', err);
     showError('Could not connect to backend. Make sure Flask server is running.');
@@ -320,38 +312,27 @@ function renderResults(data) {
   const allResults  = [...sightings, ...occurrences];
   lastResults = allResults;
 
-  // Risk Score
   if (data.risk_score) renderRiskScore(data.risk_score);
 
-  // Stats
   statsBar.innerHTML = '';
-  [
-    { num: sightings.length,   label: 'Sightings' },
-    { num: occurrences.length, label: 'Occurrences' },
-    { num: allResults.length,  label: 'Total' },
-  ].forEach(s => {
-    const el = document.createElement('div');
-    el.className = 'stat-item';
-    el.innerHTML = `<span class="stat-num">${s.num}</span><span class="stat-label">${s.label}</span>`;
-    statsBar.appendChild(el);
-  });
+  [{ num: sightings.length, label: 'Sightings' }, { num: occurrences.length, label: 'Occurrences' }, { num: allResults.length, label: 'Total' }]
+    .forEach(s => {
+      const el = document.createElement('div');
+      el.className = 'stat-item';
+      el.innerHTML = `<span class="stat-num">${s.num}</span><span class="stat-label">${s.label}</span>`;
+      statsBar.appendChild(el);
+    });
 
-  // Species info
   if (data.species_info) {
     const info = data.species_info;
     speciesTitle.textContent = info.title || '';
     speciesDesc.textContent  = info.description || '';
     speciesLink.href         = info.url || '#';
-    if (info.image_url) {
-      speciesImg.src = info.image_url;
-      speciesImg.style.display = 'block';
-    } else {
-      speciesImg.style.display = 'none';
-    }
+    speciesImg.src           = info.image_url || '';
+    speciesImg.style.display = info.image_url ? 'block' : 'none';
     speciesCard.style.display = '';
   }
 
-  // Cards
   cardsList.innerHTML = '';
 
   if (allResults.length === 0) {
@@ -369,15 +350,11 @@ function renderResults(data) {
     const photoUrl    = item.photo_url || '';
     const source      = item.source === 'iNaturalist' ? 'inaturalist' : 'gbif';
     const sourceLabel = item.source || 'Unknown';
-    const speciesLower = (item.common_name || item.species || '').toLowerCase();
-    const isVenomous  = VENOMOUS_TERMS.some(t => speciesLower.includes(t));
+    const isVenomous  = VENOMOUS_TERMS.some(t => (item.common_name || item.species || '').toLowerCase().includes(t));
     const dangerBadge = (isVenomous && showDanger) ? `<span class="card-danger">⚠️ Venomous</span>` : '';
 
     card.innerHTML = `
-      ${photoUrl
-        ? `<img class="card-photo" src="${photoUrl}" alt="${item.species}" onerror="this.style.display='none'"/>`
-        : `<div class="card-photo"></div>`
-      }
+      ${photoUrl ? `<img class="card-photo" src="${photoUrl}" alt="${item.species}" onerror="this.style.display='none'"/>` : `<div class="card-photo"></div>`}
       <div class="card-info">
         <span class="card-species">${item.common_name || item.species || 'Unknown species'}</span>
         <span class="card-location">📍 ${item.location || 'Unknown location'}</span>
@@ -390,15 +367,31 @@ function renderResults(data) {
     `;
 
     card.addEventListener('click', () => {
-      if (map && item.latitude && item.longitude) {
-        map.flyTo([item.latitude, item.longitude], 12, { animate: true, duration: 1 });
+      if (item.latitude && item.longitude) {
+        if (!mapOpen) {
+          mapOpen = true;
+          resultsBody.classList.add('map-open');
+          initMap();
+        }
+        setTimeout(() => {
+          if (map) {
+            map.invalidateSize();
+            map.flyTo([item.latitude, item.longitude], 12, { animate: true, duration: 1 });
+          }
+        }, 400);
       }
     });
 
     cardsList.appendChild(card);
   });
 
-  // Map pins
+  // Show scroll hint if content is tall
+  setTimeout(() => {
+    if (resultsPanel.scrollHeight > resultsPanel.clientHeight + 80) {
+      scrollHint.classList.add('visible');
+    }
+  }, 500);
+
   plotMapPins(allResults, data.location);
 
   if (data.errors && data.errors.length > 0) console.warn('API errors:', data.errors);
@@ -414,11 +407,10 @@ function showError(msg) {
 
 function renderRiskScore(risk) {
   riskHero.style.display = 'flex';
-
   const score = risk.score || 0;
   const label = (risk.label || 'unknown').toLowerCase();
 
-  riskNum.textContent  = score;
+  riskNum.textContent = score;
   riskLabel.textContent = risk.label || 'Unknown';
   riskLabel.className  = `risk-label ${label}`;
   riskCircle.className = `risk-score-circle ${label}`;
@@ -426,7 +418,6 @@ function renderRiskScore(risk) {
 
   riskComponents.innerHTML = '';
   const config = PERSONA_CONFIG[activePersona] || {};
-
   if (config.showComponents && risk.components) {
     Object.values(risk.components).forEach(comp => {
       const pct = ((comp.score / comp.max) * 100).toFixed(0);
@@ -447,21 +438,19 @@ function renderRiskScore(risk) {
 // ══════════════════════════════
 
 function initMap() {
-  if (map) {
-    setTimeout(() => map.invalidateSize(), 100);
-    return;
-  }
+  if (map) { setTimeout(() => map.invalidateSize(), 100); return; }
 
   map = L.map('map').setView([20, 0], 2);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
-    maxZoom: 19,
+    attribution: '© OpenStreetMap contributors', maxZoom: 19,
   }).addTo(map);
   markersLayer = L.layerGroup().addTo(map);
+
+  if (lastResults.length > 0) plotMapPins(lastResults, currentSearchData?.location);
 }
 
 function plotMapPins(results, location) {
-  if (!map) return;
+  if (!map || !markersLayer) return;
   markersLayer.clearLayers();
 
   if (location && location.latitude && location.longitude) {
@@ -474,8 +463,7 @@ function plotMapPins(results, location) {
     const icon = L.divIcon({
       className: '',
       html: `<div style="width:12px;height:12px;background:${color};border:2px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
-      iconSize: [12, 12],
-      iconAnchor: [6, 6],
+      iconSize: [12,12], iconAnchor: [6,6],
     });
     const marker = L.marker([item.latitude, item.longitude], { icon });
     marker.bindPopup(`
@@ -491,58 +479,64 @@ function plotMapPins(results, location) {
   });
 }
 
-// ── Layer toggles ──
+// ── Tile layer references ──
+let habitatLayer  = null;
+let ndviLayer     = null;
+let urbanLayer    = null;
+
 document.querySelectorAll('.layer-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    btn.classList.toggle('active');
-    console.log('Layer toggled:', btn.dataset.layer, btn.classList.contains('active'));
+    const layer  = btn.dataset.layer;
+    const active = btn.classList.toggle('active');
+
+    if (!map) return;
+
+    if (layer === 'habitat') {
+      if (active) {
+        const ee = currentSearchData && currentSearchData.earth_engine;
+        if (ee && ee.tile_url) {
+          habitatLayer = L.tileLayer(ee.tile_url, { opacity: 0.7, attribution: 'GEE Hansen Forest Loss' });
+          habitatLayer.addTo(map);
+        } else {
+          console.warn('No GEE habitat tile URL available');
+          btn.classList.remove('active');
+        }
+      } else {
+        if (habitatLayer) { map.removeLayer(habitatLayer); habitatLayer = null; }
+      }
+    }
+
+    if (layer === 'urban') {
+      const cop = currentSearchData && currentSearchData.copernicus;
+      if (active) {
+        if (cop && cop.wms_url && cop.wms_layer) {
+          urbanLayer = L.tileLayer.wms(cop.wms_url, {
+            layers:      cop.wms_layer,
+            format:      'image/png',
+            transparent: true,
+            opacity:     0.6,
+            attribution: 'Copernicus Urban Atlas',
+            version:     '1.3.0',
+          });
+          urbanLayer.addTo(map);
+        } else {
+          console.warn('No Copernicus urban tile available');
+          btn.classList.remove('active');
+        }
+      } else {
+        if (urbanLayer) { map.removeLayer(urbanLayer); urbanLayer = null; }
+      }
+    }
+
+    if (layer === 'sightings') {
+      if (active) {
+        markersLayer.addTo(map);
+      } else {
+        map.removeLayer(markersLayer);
+      }
+    }
   });
 });
-
-// ══════════════════════════════
-// MAP FULLSCREEN
-// ══════════════════════════════
-
-mapFullscreenBtn.addEventListener('click', openFullscreenMap);
-mapFullscreenClose.addEventListener('click', closeFullscreenMap);
-
-function openFullscreenMap() {
-  mapFullscreenOverlay.classList.add('open');
-
-  if (!mapFull) {
-    mapFull = L.map('mapFull').setView(map.getCenter(), map.getZoom());
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 19,
-    }).addTo(mapFull);
-    markersLayerFull = L.layerGroup().addTo(mapFull);
-    // Copy pins
-    lastResults.forEach(item => {
-      if (!item.latitude || !item.longitude) return;
-      const color = item.source === 'iNaturalist' ? '#6a3db8' : '#007850';
-      const icon = L.divIcon({
-        className: '',
-        html: `<div style="width:12px;height:12px;background:${color};border:2px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
-        iconSize: [12, 12], iconAnchor: [6, 6],
-      });
-      const marker = L.marker([item.latitude, item.longitude], { icon });
-      marker.bindPopup(`
-        <div style="font-family:Sora,sans-serif;font-size:13px;min-width:160px;">
-          <strong>${item.common_name || item.species || 'Unknown'}</strong><br>
-          <span style="color:#888;font-size:11px;">📍 ${item.location || ''}</span><br>
-          <span style="color:#888;font-size:11px;">${item.date || ''}</span>
-        </div>
-      `);
-      markersLayerFull.addLayer(marker);
-    });
-  }
-
-  setTimeout(() => mapFull.invalidateSize(), 100);
-}
-
-function closeFullscreenMap() {
-  mapFullscreenOverlay.classList.remove('open');
-}
 
 // ══════════════════════════════
 // AI STRIP
@@ -552,10 +546,7 @@ aiToggle.addEventListener('click', () => {
   aiOpen = !aiOpen;
   aiPanel.classList.toggle('open', aiOpen);
   aiChevron.classList.toggle('open', aiOpen);
-
-  if (aiOpen && aiHistory.length === 0 && currentSearchData) {
-    triggerAIInsight(null);
-  }
+  if (aiOpen && aiHistory.length === 0 && currentSearchData) triggerAIInsight(null);
 });
 
 aiSendBtn.addEventListener('click', sendAIMessage);
