@@ -2,3 +2,6 @@ Boseman is an urban snake displacement research tool that lets researchers, cons
 
 
 A detailed proposed paper published on zenodo about this
+
+![lagos](https://github.com/user-attachments/assets/0d2000bb-c524-4fce-b6de-47e625db3af5)
+
