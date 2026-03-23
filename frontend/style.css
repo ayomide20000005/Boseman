@@ -15,10 +15,16 @@
   --font-display:  'Playfair Display', serif;
   --font-body:     'Sora', sans-serif;
   --shadow-bar:    0 4px 28px rgba(90, 50, 170, 0.15);
+
+  /* Risk colors */
+  --risk-low:      #00b874;
+  --risk-moderate: #f0a500;
+  --risk-high:     #f06000;
+  --risk-critical: #cc0000;
 }
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { width: 100%; height: 100%; overflow: hidden; }
+html, body { width: 100%; height: 100%; }
 
 body {
   background: var(--vib-bg);
@@ -28,6 +34,7 @@ body {
     radial-gradient(ellipse at 50% 50%, rgba(180,150,240,0.12) 0%, transparent 65%);
   font-family: var(--font-body);
   color: var(--text-primary);
+  overflow-x: hidden;
 }
 
 /* ══════════════════════════════
@@ -39,9 +46,9 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  min-height: 100vh;
   padding: 40px 20px;
-  gap: 36px;
+  gap: 28px;
   animation: fadeUp 0.65s ease both;
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
@@ -51,6 +58,7 @@ body {
   pointer-events: none;
   transform: translateY(-20px);
   position: absolute;
+  width: 100%;
 }
 
 @keyframes fadeUp {
@@ -81,6 +89,68 @@ body {
   text-transform: uppercase;
 }
 
+/* ── Persona Selector ── */
+.persona-section {
+  width: 100%;
+  max-width: 620px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.persona-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.persona-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.persona-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: var(--white);
+  border: 1.5px solid var(--vib-pale);
+  border-radius: 24px;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
+  user-select: none;
+}
+
+.persona-chip:hover {
+  background: var(--vib-surface);
+  border-color: var(--vib-soft);
+  color: var(--vib-core);
+  transform: translateY(-1px);
+}
+
+.persona-chip.active {
+  background: var(--vib-core);
+  border-color: var(--vib-core);
+  color: var(--white);
+  box-shadow: 0 3px 14px rgba(106,61,184,0.35);
+}
+
+.persona-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+/* ── Search Container ── */
 .search-container {
   width: 100%;
   max-width: 620px;
@@ -347,6 +417,9 @@ body {
   height: 100vh;
   width: 100%;
   background: var(--vib-bg);
+  background-image:
+    radial-gradient(ellipse at 10% 15%, rgba(160,120,230,0.28) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 80%, rgba(120,80,210,0.2) 0%, transparent 50%);
 }
 
 .results-page.visible {
@@ -358,11 +431,12 @@ body {
 .results-topbar {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 12px 20px;
+  gap: 12px;
+  padding: 10px 20px;
   background: var(--white);
   border-bottom: 1px solid var(--vib-pale);
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .back-btn {
@@ -443,37 +517,344 @@ body {
   flex-shrink: 0;
 }
 
-/* Body split */
-.results-body {
-  display: flex;
+.active-persona-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  background: var(--vib-core);
+  color: var(--white);
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* ── Scrollable results body ── */
+.results-scroll {
   flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ── Risk Hero ── */
+.risk-hero {
+  background: var(--white);
+  border: 1px solid var(--vib-pale);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: var(--shadow-bar);
+  animation: fadeUp 0.4s ease both;
+}
+
+.risk-score-wrap {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.risk-score-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 4px solid var(--vib-pale);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: border-color 0.5s ease;
+  gap: 0;
+}
+
+.risk-score-circle.low      { border-color: var(--risk-low); }
+.risk-score-circle.moderate { border-color: var(--risk-moderate); }
+.risk-score-circle.high     { border-color: var(--risk-high); }
+.risk-score-circle.critical { border-color: var(--risk-critical); }
+
+.risk-num {
+  font-size: 1.6rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.risk-max {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+.risk-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.risk-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.risk-label.low      { color: var(--risk-low); }
+.risk-label.moderate { color: var(--risk-moderate); }
+.risk-label.high     { color: var(--risk-high); }
+.risk-label.critical { color: var(--risk-critical); }
+
+.risk-interpretation {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 500px;
+}
+
+.risk-components {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.risk-component-item {
+  flex: 1;
+  min-width: 120px;
+  background: var(--vib-surface);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rc-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rc-bar-wrap {
+  width: 100%;
+  height: 4px;
+  background: var(--vib-pale);
+  border-radius: 2px;
   overflow: hidden;
 }
 
-/* Left panel */
-.results-panel {
-  width: 360px;
-  min-width: 300px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--white);
-  border-right: 1px solid var(--vib-pale);
-  overflow-y: auto;
+.rc-bar {
+  height: 100%;
+  background: var(--vib-core);
+  border-radius: 2px;
+  transition: width 0.8s ease;
 }
 
-/* Species card */
+.rc-score {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--vib-core);
+}
+
+/* ── Persona-specific risk hero overrides ── */
+body.persona-first-responder .risk-hero {
+  background: #1a0a0a;
+  border-color: var(--risk-critical);
+}
+
+body.persona-first-responder .risk-label,
+body.persona-first-responder .risk-interpretation,
+body.persona-first-responder .rc-label,
+body.persona-first-responder .rc-score {
+  color: #fff;
+}
+
+body.persona-health-worker .risk-hero {
+  border-left: 4px solid var(--risk-high);
+}
+
+/* ── AI Strip ── */
+.ai-strip {
+  background: var(--white);
+  border: 1px solid var(--vib-pale);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(90,50,170,0.08);
+}
+
+.ai-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--vib-core);
+  cursor: pointer;
+  transition: background 0.2s;
+  text-align: left;
+}
+
+.ai-toggle:hover { background: var(--vib-surface); }
+
+.ai-toggle svg:first-child { flex-shrink: 0; }
+
+.ai-toggle span { flex: 1; }
+
+.ai-chevron {
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.ai-chevron.open { transform: rotate(180deg); }
+
+.ai-panel {
+  display: none;
+  flex-direction: column;
+  border-top: 1px solid var(--vib-surface);
+  max-height: 400px;
+}
+
+.ai-panel.open { display: flex; }
+
+.ai-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 80px;
+}
+
+.ai-message {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: fadeUp 0.25s ease both;
+}
+
+.ai-message-role {
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.ai-message-role.ai { color: var(--vib-core); }
+
+.ai-message-text {
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.ai-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 8px 0;
+}
+
+.ai-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--vib-surface);
+  background: var(--vib-surface);
+}
+
+.ai-input {
+  flex: 1;
+  background: var(--white);
+  border: 1px solid var(--vib-pale);
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.ai-input:focus { border-color: var(--vib-soft); }
+.ai-input::placeholder { color: var(--text-muted); }
+
+.ai-send-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, var(--vib-core), var(--vib-mid));
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.ai-send-btn:hover { transform: scale(1.08); }
+.ai-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ── Stats Bar ── */
+.stats-bar {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--white);
+  border: 1px solid var(--vib-pale);
+  border-radius: 14px;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.stat-num {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--vib-core);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Species Card ── */
 .species-card {
   display: none;
   gap: 14px;
   padding: 16px;
-  border-bottom: 1px solid var(--vib-surface);
-  background: linear-gradient(135deg, rgba(106,61,184,0.05), rgba(138,92,208,0.03));
+  background: var(--white);
+  border: 1px solid var(--vib-pale);
+  border-radius: 14px;
+  background-image: linear-gradient(135deg, rgba(106,61,184,0.04), rgba(138,92,208,0.02));
 }
 
-.species-card.visible {
-  display: flex;
-}
+.species-card.visible { display: flex; }
 
 .species-img {
   width: 80px;
@@ -498,9 +879,16 @@ body {
   color: var(--text-secondary);
   line-height: 1.5;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Student persona shows full description */
+body.persona-student .species-desc {
+  -webkit-line-clamp: unset;
+  overflow: visible;
+  display: block;
 }
 
 .species-link {
@@ -512,154 +900,51 @@ body {
 
 .species-link:hover { text-decoration: underline; }
 
-/* Stats bar */
-.stats-bar {
-  display: flex;
-  gap: 12px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--vib-surface);
-  flex-shrink: 0;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.stat-num {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--vib-core);
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* Cards list */
-.cards-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Loading state */
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 40px 20px;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-}
-
-.loading-spinner {
-  width: 28px; height: 28px;
-  border: 2.5px solid var(--vib-pale);
-  border-top-color: var(--vib-core);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Sighting card */
-.sighting-card {
-  display: flex;
-  gap: 12px;
-  padding: 12px;
-  background: var(--vib-surface);
-  border: 1px solid transparent;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, transform 0.15s;
-  animation: cardIn 0.25s ease both;
-}
-
-@keyframes cardIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.sighting-card:hover {
+/* ── Map Section (collapsible) ── */
+.map-section {
   background: var(--white);
-  border-color: var(--vib-pale);
-  transform: translateY(-1px);
+  border: 1px solid var(--vib-pale);
+  border-radius: 14px;
+  overflow: hidden;
 }
 
-.card-photo {
-  width: 60px; height: 60px;
-  border-radius: 8px;
-  object-fit: cover;
-  flex-shrink: 0;
-  background: var(--vib-pale);
-}
-
-.card-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-
-.card-species {
+.map-toggle-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  font-family: var(--font-body);
   font-size: 0.82rem;
   font-weight: 500;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.card-location {
-  font-size: 0.72rem;
   color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-align: left;
 }
 
-.card-date { font-size: 0.68rem; color: var(--text-muted); }
+.map-toggle-btn:hover { background: var(--vib-surface); }
+.map-toggle-btn span { flex: 1; }
 
-.card-source {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 0.62rem;
-  font-weight: 500;
-  letter-spacing: 0.03em;
-  margin-top: 2px;
-  align-self: flex-start;
+.map-chevron {
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
 }
 
-.card-source.inaturalist {
-  background: rgba(106,61,184,0.1);
-  color: var(--vib-core);
+.map-chevron.open { transform: rotate(180deg); }
+
+.map-collapsible {
+  display: none;
+  border-top: 1px solid var(--vib-surface);
 }
 
-.card-source.gbif {
-  background: rgba(0,120,80,0.1);
-  color: #007850;
-}
+.map-collapsible.open { display: block; }
 
-.no-results {
-  text-align: center;
-  padding: 30px 16px;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  line-height: 1.6;
-}
-
-/* ── Map ── */
 .map-wrap {
-  flex: 1;
   position: relative;
-  overflow: hidden;
+  height: 400px;
 }
 
 #map {
@@ -668,7 +953,12 @@ body {
   z-index: 1;
 }
 
-/* Layer controls */
+/* Persona: Urban Planner & Wildlife Responder — map open by default and taller */
+body.persona-urban-planner .map-wrap,
+body.persona-wildlife-responder .map-wrap {
+  height: 500px;
+}
+
 .layer-controls {
   position: absolute;
   top: 14px;
@@ -711,6 +1001,157 @@ body {
   background: var(--vib-core);
   border-color: var(--vib-core);
   color: white;
+}
+
+/* ── Cards Section ── */
+.cards-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Loading state */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  background: var(--white);
+  border: 1px solid var(--vib-pale);
+  border-radius: 14px;
+}
+
+.loading-spinner {
+  width: 28px; height: 28px;
+  border: 2.5px solid var(--vib-pale);
+  border-top-color: var(--vib-core);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Sighting card */
+.sighting-card {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: var(--white);
+  border: 1px solid var(--vib-pale);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  animation: cardIn 0.25s ease both;
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.sighting-card:hover {
+  background: var(--vib-surface);
+  border-color: var(--vib-soft);
+  transform: translateY(-1px);
+}
+
+.card-photo {
+  width: 60px; height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--vib-pale);
+}
+
+.card-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+
+.card-species {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-location {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-date { font-size: 0.68rem; color: var(--text-muted); }
+
+/* Resident persona — bigger, friendlier cards */
+body.persona-resident .sighting-card {
+  padding: 16px;
+  border-radius: 16px;
+}
+
+body.persona-resident .card-species {
+  font-size: 0.92rem;
+}
+
+/* First Responder — compact high-contrast cards */
+body.persona-first-responder .sighting-card {
+  border-left: 3px solid var(--risk-critical);
+}
+
+.card-source {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  margin-top: 2px;
+  align-self: flex-start;
+}
+
+.card-source.inaturalist {
+  background: rgba(106,61,184,0.1);
+  color: var(--vib-core);
+}
+
+.card-source.gbif {
+  background: rgba(0,120,80,0.1);
+  color: #007850;
+}
+
+/* Danger badge for venomous species */
+.card-danger {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  background: rgba(204,0,0,0.1);
+  color: var(--risk-critical);
+  margin-top: 2px;
+  align-self: flex-start;
+}
+
+.no-results {
+  text-align: center;
+  padding: 30px 16px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  background: var(--white);
+  border: 1px solid var(--vib-pale);
+  border-radius: 14px;
 }
 
 /* Scrollbar */
