@@ -2,10 +2,10 @@
 
 import os
 import concurrent.futures
+import google.generativeai as genai
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
-import anthropic
 
 from apis.inaturalist import search_inaturalist
 from apis.gbif import search_gbif
@@ -20,7 +20,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 PERSONA_PROMPTS = {
     "Researcher": (
@@ -157,7 +157,6 @@ def search():
             except Exception as e:
                 results['errors'].append({'source': 'Copernicus', 'error': str(e)})
 
-    # ── Wire in risk score ──
     try:
         results['risk_score'] = compute_risk_score(
             sightings=results['sightings'],
@@ -179,10 +178,10 @@ def ai_insight():
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
-    query        = data.get('query', '')
-    persona      = data.get('persona', 'Researcher')
-    search_data  = data.get('search_data', {})
-    history      = data.get('history', [])
+    query       = data.get('query', '')
+    persona     = data.get('persona', 'Researcher')
+    search_data = data.get('search_data', {})
+    history     = data.get('history', [])
 
     sightings    = search_data.get('sightings', [])
     occurrences  = search_data.get('occurrences', [])
@@ -226,31 +225,28 @@ Species info source: Wikipedia — {species_info.get('title', 'N/A') if species_
         "Do not hallucinate. Keep your response concise and grounded."
     )
 
-    # Build message history for follow-ups
-    messages = []
-    for turn in history:
-        messages.append({"role": turn["role"], "content": turn["content"]})
-
-    # Add current user message with data context
-    if not history:
-        user_message = f"Here is the data for the search '{query}':\n\n{data_summary}\n\nPlease give me your analysis."
-    else:
-        user_message = query
-
-    messages.append({"role": "user", "content": user_message})
-
     try:
-        client   = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        response = client.messages.create(
-            model="claude-opus-4-5",
-            max_tokens=600,
-            system=system_prompt,
-            messages=messages,
+        model = genai.GenerativeModel(
+            model_name="gemini-2.5-pro",
+            system_instruction=system_prompt,
         )
-        reply = response.content[0].text
+
+        gemini_history = []
+        for turn in history:
+            role = "user" if turn["role"] == "user" else "model"
+            gemini_history.append({"role": role, "parts": [turn["content"]]})
+
+        chat = model.start_chat(history=gemini_history)
+
+        if not history:
+            user_message = f"Here is the data for the search '{query}':\n\n{data_summary}\n\nPlease give me your analysis."
+        else:
+            user_message = query
+
+        response = chat.send_message(user_message)
 
         return jsonify({
-            'reply':   reply,
+            'reply':   response.text,
             'persona': persona,
             'query':   query,
         }), 200
