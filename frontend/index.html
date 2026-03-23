@@ -21,7 +21,6 @@
       <p class="tagline">Urban Snake Displacement Search</p>
     </div>
 
-    <!-- Persona List -->
     <div class="persona-list" id="personaList">
       <button class="persona-item active" data-persona="Researcher" data-icon="🔬">🔬 Researcher</button>
       <button class="persona-item" data-persona="Health Worker" data-icon="🏥">🏥 Health Worker</button>
@@ -36,7 +35,6 @@
     </div>
 
     <div class="search-container">
-
       <div class="tools-strip" id="toolsStrip">
         <button class="tool-chip" data-tool="species">Species</button>
         <button class="tool-chip" data-tool="location">Location</button>
@@ -54,9 +52,7 @@
           </svg>
           <span>Tools</span>
         </button>
-
         <div class="divider"></div>
-
         <div class="plus-wrap" id="plusWrap">
           <button class="plus-btn" id="plusBtn" title="Upload">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -84,24 +80,13 @@
             </label>
           </div>
         </div>
-
         <div class="divider"></div>
-
-        <input
-          type="text"
-          id="searchInput"
-          class="search-input"
-          placeholder="Search species, location, habitat..."
-          autocomplete="off"
-        />
-
+        <input type="text" id="searchInput" class="search-input" placeholder="Search species, location, habitat..." autocomplete="off"/>
         <button class="search-btn" id="searchBtn" title="Search">
           <span class="b-letter">b</span>
         </button>
       </div>
-
       <div class="active-bar" id="activeBar"></div>
-
     </div>
 
   </main>
@@ -111,7 +96,6 @@
   ══════════════════════════════ -->
   <div class="results-page" id="resultsPage">
 
-    <!-- Top bar -->
     <div class="results-topbar">
       <button class="back-btn" id="backBtn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -119,20 +103,15 @@
         </svg>
         Back
       </button>
-
       <div class="results-search-wrap">
         <input type="text" id="resultsSearchInput" class="results-search-input" placeholder="Search again..."/>
-        <button class="results-search-btn" id="resultsSearchBtn">
-          <span class="b-letter-sm">b</span>
-        </button>
+        <button class="results-search-btn" id="resultsSearchBtn"><span class="b-letter-sm">b</span></button>
       </div>
-
       <div class="topbar-right">
         <span class="results-query-label" id="resultsQueryLabel"></span>
         <div class="active-persona-badge" id="activePersonaBadge"></div>
-        <!-- Map expand button in topbar -->
         <button class="map-expand-btn" id="mapExpandBtn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
           </svg>
           Show Map
@@ -140,22 +119,21 @@
       </div>
     </div>
 
-    <!-- Results Body -->
     <div class="results-body" id="resultsBody">
 
-      <!-- CONTENT PANEL (full width when map collapsed) -->
+      <!-- CONTENT PANEL -->
       <div class="results-panel" id="resultsPanel">
 
-        <!-- Scroll indicator -->
+        <!-- Scroll hint -->
         <div class="scroll-hint" id="scrollHint">
-          <span>Scroll for more</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6 9 12 15 18 9"/>
           </svg>
+          Scroll for more
         </div>
 
         <!-- Risk Hero -->
-        <div class="section-block risk-hero" id="riskHero" style="display:none;">
+        <div class="risk-hero section-block" id="riskHero" style="display:none;">
           <div class="risk-score-wrap">
             <div class="risk-score-circle" id="riskCircle">
               <span class="risk-num" id="riskNum">--</span>
@@ -199,54 +177,12 @@
         <!-- Stats -->
         <div class="section-block stats-bar" id="statsBar"></div>
 
-        <!-- Species Card -->
-        <div class="section-block" id="speciesCard" style="display:none;">
-          <button class="section-toggle" id="speciesToggle">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            </svg>
-            <span>Species Info</span>
-            <svg class="section-chevron" id="speciesChevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </button>
-          <div class="section-content" id="speciesContent">
-            <div class="species-inner">
-              <img class="species-img" id="speciesImg" src="" alt=""/>
-              <div class="species-info">
-                <h3 class="species-title" id="speciesTitle"></h3>
-                <p class="species-desc" id="speciesDesc"></p>
-                <a class="species-link" id="speciesLink" href="" target="_blank">Read more →</a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Cards -->
-        <div class="section-block">
-          <button class="section-toggle" id="cardsToggle">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
-            <span id="cardsToggleLabel">Sightings</span>
-            <svg class="section-chevron open" id="cardsChevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </button>
-          <div class="section-content open" id="cardsContent">
-            <div class="cards-list" id="cardsList">
-              <div class="loading-state" id="loadingState">
-                <div class="loading-spinner"></div>
-                <p>Searching across all sources...</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- Persona Sections — rendered dynamically by app.js -->
+        <div id="personaSections"></div>
 
       </div>
 
-      <!-- MAP PANEL (hidden by default, expands on button click) -->
+      <!-- MAP PANEL -->
       <div class="map-panel" id="mapPanel">
         <div class="map-panel-header">
           <span class="map-panel-title">
