@@ -19,6 +19,53 @@
       <p class="tagline">Urban Snake Displacement Search</p>
     </div>
 
+    <!-- Persona Selector -->
+    <div class="persona-section">
+      <p class="persona-label">I am a</p>
+      <div class="persona-grid" id="personaGrid">
+        <button class="persona-chip active" data-persona="Researcher">
+          <span class="persona-icon">🔬</span>
+          <span>Researcher</span>
+        </button>
+        <button class="persona-chip" data-persona="Health Worker">
+          <span class="persona-icon">🏥</span>
+          <span>Health Worker</span>
+        </button>
+        <button class="persona-chip" data-persona="Resident">
+          <span class="persona-icon">🏘️</span>
+          <span>Resident</span>
+        </button>
+        <button class="persona-chip" data-persona="Urban Planner">
+          <span class="persona-icon">🏙️</span>
+          <span>Urban Planner</span>
+        </button>
+        <button class="persona-chip" data-persona="Wildlife Responder">
+          <span class="persona-icon">🐍</span>
+          <span>Wildlife Responder</span>
+        </button>
+        <button class="persona-chip" data-persona="Farmer">
+          <span class="persona-icon">🌾</span>
+          <span>Farmer</span>
+        </button>
+        <button class="persona-chip" data-persona="Journalist">
+          <span class="persona-icon">📰</span>
+          <span>Journalist</span>
+        </button>
+        <button class="persona-chip" data-persona="Student">
+          <span class="persona-icon">📚</span>
+          <span>Student</span>
+        </button>
+        <button class="persona-chip" data-persona="Tour Guide">
+          <span class="persona-icon">🗺️</span>
+          <span>Tour Guide</span>
+        </button>
+        <button class="persona-chip" data-persona="First Responder">
+          <span class="persona-icon">🚨</span>
+          <span>First Responder</span>
+        </button>
+      </div>
+    </div>
+
     <div class="search-container">
 
       <div class="tools-strip" id="toolsStrip">
@@ -93,6 +140,7 @@
   <!-- ── Results Page ── -->
   <div class="results-page" id="resultsPage">
 
+    <!-- Top bar -->
     <div class="results-topbar">
       <button class="back-btn" id="backBtn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -109,46 +157,104 @@
       </div>
 
       <span class="results-query-label" id="resultsQueryLabel"></span>
+
+      <!-- Active persona badge -->
+      <div class="active-persona-badge" id="activePersonaBadge"></div>
     </div>
 
-    <div class="results-body">
+    <!-- Scrollable results body -->
+    <div class="results-scroll" id="resultsScroll">
 
-      <!-- Left panel -->
-      <div class="results-panel" id="resultsPanel">
-
-        <div class="species-card" id="speciesCard">
-          <img class="species-img" id="speciesImg" src="" alt=""/>
-          <div class="species-info">
-            <h3 class="species-title" id="speciesTitle"></h3>
-            <p class="species-desc" id="speciesDesc"></p>
-            <a class="species-link" id="speciesLink" href="" target="_blank">Read more →</a>
+      <!-- ── Risk Score Hero (shown for all personas, styled differently) ── -->
+      <div class="risk-hero" id="riskHero" style="display:none;">
+        <div class="risk-score-wrap">
+          <div class="risk-score-circle" id="riskCircle">
+            <span class="risk-num" id="riskNum">--</span>
+            <span class="risk-max">/100</span>
+          </div>
+          <div class="risk-info">
+            <span class="risk-label" id="riskLabel">Calculating...</span>
+            <span class="risk-interpretation" id="riskInterpretation"></span>
           </div>
         </div>
+        <div class="risk-components" id="riskComponents"></div>
+      </div>
 
-        <div class="stats-bar" id="statsBar"></div>
+      <!-- ── AI Insight Strip ── -->
+      <div class="ai-strip" id="aiStrip">
+        <button class="ai-toggle" id="aiToggle">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span id="aiToggleLabel">Ask AI about these results</span>
+          <svg class="ai-chevron" id="aiChevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="ai-panel" id="aiPanel">
+          <div class="ai-messages" id="aiMessages"></div>
+          <div class="ai-input-wrap">
+            <input type="text" class="ai-input" id="aiInput" placeholder="Ask a follow-up question..."/>
+            <button class="ai-send-btn" id="aiSendBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
 
+      <!-- ── Stats Bar ── -->
+      <div class="stats-bar" id="statsBar"></div>
+
+      <!-- ── Species Card ── -->
+      <div class="species-card" id="speciesCard">
+        <img class="species-img" id="speciesImg" src="" alt=""/>
+        <div class="species-info">
+          <h3 class="species-title" id="speciesTitle"></h3>
+          <p class="species-desc" id="speciesDesc"></p>
+          <a class="species-link" id="speciesLink" href="" target="_blank">Read more →</a>
+        </div>
+      </div>
+
+      <!-- ── Map Section (collapsible) ── -->
+      <div class="map-section" id="mapSection">
+        <button class="map-toggle-btn" id="mapToggleBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+          </svg>
+          <span>Map</span>
+          <svg class="map-chevron" id="mapChevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <div class="map-collapsible" id="mapCollapsible">
+          <div class="map-wrap">
+            <div id="map"></div>
+            <div class="layer-controls">
+              <span class="layer-title">Layers</span>
+              <button class="layer-btn active" data-layer="sightings">Sightings</button>
+              <button class="layer-btn" data-layer="habitat">Habitat Loss</button>
+              <button class="layer-btn" data-layer="urban">Urban Sprawl</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Cards List ── -->
+      <div class="cards-section">
         <div class="cards-list" id="cardsList">
           <div class="loading-state" id="loadingState">
             <div class="loading-spinner"></div>
             <p>Searching across all sources...</p>
           </div>
         </div>
-
-      </div>
-
-      <!-- Right map -->
-      <div class="map-wrap">
-        <div id="map"></div>
-        <div class="layer-controls">
-          <span class="layer-title">Layers</span>
-          <button class="layer-btn active" data-layer="sightings">Sightings</button>
-          <button class="layer-btn" data-layer="habitat">Habitat Loss</button>
-          <button class="layer-btn" data-layer="urban">Urban Sprawl</button>
-        </div>
       </div>
 
     </div>
-
   </div>
 
   <script src="app.js"></script>
