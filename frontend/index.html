@@ -21,92 +21,22 @@
       <p class="tagline">Urban Snake Displacement Search</p>
     </div>
 
+    <!-- Persona List -->
+    <div class="persona-list" id="personaList">
+      <button class="persona-item active" data-persona="Researcher" data-icon="🔬">🔬 Researcher</button>
+      <button class="persona-item" data-persona="Health Worker" data-icon="🏥">🏥 Health Worker</button>
+      <button class="persona-item" data-persona="Resident" data-icon="🏘️">🏘️ Resident</button>
+      <button class="persona-item" data-persona="Urban Planner" data-icon="🏙️">🏙️ Urban Planner</button>
+      <button class="persona-item" data-persona="Wildlife Responder" data-icon="🐍">🐍 Wildlife Responder</button>
+      <button class="persona-item" data-persona="Farmer" data-icon="🌾">🌾 Farmer</button>
+      <button class="persona-item" data-persona="Journalist" data-icon="📰">📰 Journalist</button>
+      <button class="persona-item" data-persona="Student" data-icon="📚">📚 Student</button>
+      <button class="persona-item" data-persona="Tour Guide" data-icon="🗺️">🗺️ Tour Guide</button>
+      <button class="persona-item" data-persona="First Responder" data-icon="🚨">🚨 First Responder</button>
+    </div>
+
     <div class="search-container">
 
-      <!-- Persona Dropdown -->
-      <div class="persona-wrap" id="personaWrap">
-        <button class="persona-trigger" id="personaTrigger">
-          <span class="persona-trigger-icon" id="personaTriggerIcon">🔬</span>
-          <span class="persona-trigger-label" id="personaTriggerLabel">Researcher</span>
-          <svg class="persona-caret" id="personaCaret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </button>
-        <div class="persona-dropdown" id="personaDropdown">
-          <div class="persona-dropdown-item active" data-persona="Researcher" data-icon="🔬">
-            <span class="pd-icon">🔬</span>
-            <div class="pd-text">
-              <span class="pd-name">Researcher</span>
-              <span class="pd-desc">Full data, taxonomy, USDRI breakdown</span>
-            </div>
-          </div>
-          <div class="persona-dropdown-item" data-persona="Health Worker" data-icon="🏥">
-            <span class="pd-icon">🏥</span>
-            <div class="pd-text">
-              <span class="pd-name">Health Worker</span>
-              <span class="pd-desc">Risk level, venomous species, hospitals</span>
-            </div>
-          </div>
-          <div class="persona-dropdown-item" data-persona="Resident" data-icon="🏘️">
-            <span class="pd-icon">🏘️</span>
-            <div class="pd-text">
-              <span class="pd-name">Resident</span>
-              <span class="pd-desc">Plain language safety verdict</span>
-            </div>
-          </div>
-          <div class="persona-dropdown-item" data-persona="Urban Planner" data-icon="🏙️">
-            <span class="pd-icon">🏙️</span>
-            <div class="pd-text">
-              <span class="pd-name">Urban Planner</span>
-              <span class="pd-desc">Habitat loss, sprawl, displacement trends</span>
-            </div>
-          </div>
-          <div class="persona-dropdown-item" data-persona="Wildlife Responder" data-icon="🐍">
-            <span class="pd-icon">🐍</span>
-            <div class="pd-text">
-              <span class="pd-name">Wildlife Responder</span>
-              <span class="pd-desc">Hotspots, clusters, field data</span>
-            </div>
-          </div>
-          <div class="persona-dropdown-item" data-persona="Farmer" data-icon="🌾">
-            <span class="pd-icon">🌾</span>
-            <div class="pd-text">
-              <span class="pd-name">Farmer</span>
-              <span class="pd-desc">Farmland threats, livestock risk</span>
-            </div>
-          </div>
-          <div class="persona-dropdown-item" data-persona="Journalist" data-icon="📰">
-            <span class="pd-icon">📰</span>
-            <div class="pd-text">
-              <span class="pd-name">Journalist</span>
-              <span class="pd-desc">Key stats, trends, story angles</span>
-            </div>
-          </div>
-          <div class="persona-dropdown-item" data-persona="Student" data-icon="📚">
-            <span class="pd-icon">📚</span>
-            <div class="pd-text">
-              <span class="pd-name">Student</span>
-              <span class="pd-desc">Educational context, species info</span>
-            </div>
-          </div>
-          <div class="persona-dropdown-item" data-persona="Tour Guide" data-icon="🗺️">
-            <span class="pd-icon">🗺️</span>
-            <div class="pd-text">
-              <span class="pd-name">Tour Guide</span>
-              <span class="pd-desc">Safe zones, active areas, seasonal info</span>
-            </div>
-          </div>
-          <div class="persona-dropdown-item" data-persona="First Responder" data-icon="🚨">
-            <span class="pd-icon">🚨</span>
-            <div class="pd-text">
-              <span class="pd-name">First Responder</span>
-              <span class="pd-desc">Immediate risk, active species, nearest hospital</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tools Strip -->
       <div class="tools-strip" id="toolsStrip">
         <button class="tool-chip" data-tool="species">Species</button>
         <button class="tool-chip" data-tool="location">Location</button>
@@ -115,7 +45,6 @@
         <button class="tool-chip" data-tool="urban">Urban Sprawl</button>
       </div>
 
-      <!-- Search Bar -->
       <div class="search-bar" id="searchBar">
         <button class="tools-btn" id="toolsBtn" title="Tools">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -201,14 +130,29 @@
       <div class="topbar-right">
         <span class="results-query-label" id="resultsQueryLabel"></span>
         <div class="active-persona-badge" id="activePersonaBadge"></div>
+        <!-- Map expand button in topbar -->
+        <button class="map-expand-btn" id="mapExpandBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+          </svg>
+          Show Map
+        </button>
       </div>
     </div>
 
-    <!-- Results Body: Left panel + Right map -->
-    <div class="results-body">
+    <!-- Results Body -->
+    <div class="results-body" id="resultsBody">
 
-      <!-- LEFT PANEL -->
+      <!-- CONTENT PANEL (full width when map collapsed) -->
       <div class="results-panel" id="resultsPanel">
+
+        <!-- Scroll indicator -->
+        <div class="scroll-hint" id="scrollHint">
+          <span>Scroll for more</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
 
         <!-- Risk Hero -->
         <div class="section-block risk-hero" id="riskHero" style="display:none;">
@@ -226,14 +170,14 @@
         </div>
 
         <!-- AI Strip -->
-        <div class="section-block ai-strip" id="aiStrip">
+        <div class="section-block ai-strip">
           <button class="section-toggle ai-toggle" id="aiToggle">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"/>
               <line x1="12" y1="8" x2="12" y2="12"/>
               <line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
-            <span id="aiToggleLabel">Ask AI about these results</span>
+            <span>AI Insight</span>
             <svg class="section-chevron" id="aiChevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="6 9 12 15 18 9"/>
             </svg>
@@ -256,7 +200,7 @@
         <div class="section-block stats-bar" id="statsBar"></div>
 
         <!-- Species Card -->
-        <div class="section-block species-card" id="speciesCard">
+        <div class="section-block" id="speciesCard" style="display:none;">
           <button class="section-toggle" id="speciesToggle">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -266,7 +210,7 @@
               <polyline points="6 9 12 15 18 9"/>
             </svg>
           </button>
-          <div class="section-content species-content" id="speciesContent">
+          <div class="section-content" id="speciesContent">
             <div class="species-inner">
               <img class="species-img" id="speciesImg" src="" alt=""/>
               <div class="species-info">
@@ -278,8 +222,8 @@
           </div>
         </div>
 
-        <!-- Sightings Cards -->
-        <div class="section-block cards-block" id="cardsBlock">
+        <!-- Cards -->
+        <div class="section-block">
           <button class="section-toggle" id="cardsToggle">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
@@ -290,7 +234,7 @@
               <polyline points="6 9 12 15 18 9"/>
             </svg>
           </button>
-          <div class="section-content cards-content open" id="cardsContent">
+          <div class="section-content open" id="cardsContent">
             <div class="cards-list" id="cardsList">
               <div class="loading-state" id="loadingState">
                 <div class="loading-spinner"></div>
@@ -302,39 +246,32 @@
 
       </div>
 
-      <!-- RIGHT MAP -->
-      <div class="map-side" id="mapSide">
-        <div id="map"></div>
-        <div class="layer-controls">
-          <span class="layer-title">Layers</span>
-          <button class="layer-btn active" data-layer="sightings">Sightings</button>
-          <button class="layer-btn" data-layer="habitat">Habitat Loss</button>
-          <button class="layer-btn" data-layer="urban">Urban Sprawl</button>
+      <!-- MAP PANEL (hidden by default, expands on button click) -->
+      <div class="map-panel" id="mapPanel">
+        <div class="map-panel-header">
+          <span class="map-panel-title">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+            </svg>
+            Map
+          </span>
+          <div class="layer-controls">
+            <button class="layer-btn active" data-layer="sightings">Sightings</button>
+            <button class="layer-btn" data-layer="habitat">Habitat Loss</button>
+            <button class="layer-btn" data-layer="urban">Urban Sprawl</button>
+          </div>
+          <button class="map-collapse-btn" id="mapCollapseBtn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Close Map
+          </button>
         </div>
-        <!-- Fullscreen toggle -->
-        <button class="map-fullscreen-btn" id="mapFullscreenBtn" title="Fullscreen map">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 3 21 3 21 9"/>
-            <polyline points="9 21 3 21 3 15"/>
-            <line x1="21" y1="3" x2="14" y2="10"/>
-            <line x1="3" y1="21" x2="10" y2="14"/>
-          </svg>
-        </button>
+        <div id="map"></div>
       </div>
 
     </div>
-  </div>
-
-  <!-- Map fullscreen overlay -->
-  <div class="map-fullscreen-overlay" id="mapFullscreenOverlay">
-    <div id="mapFull"></div>
-    <button class="map-fullscreen-close" id="mapFullscreenClose">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18"/>
-        <line x1="6" y1="6" x2="18" y2="18"/>
-      </svg>
-      Close
-    </button>
   </div>
 
   <script src="app.js"></script>
