@@ -1,7 +1,6 @@
 // ── Boseman app.js ──
-const API_BASE_URL = window.location.hostname === 'localhost' 
-    ? 'http://127.0.0.1:5000' 
-    : 'https://your-render-backend-url.onrender.com'; // UPDATE THIS AFTER DEPLOYING BACKEND
+// NOTE: We will update this URL when the backend is deployed to Render
+const API_BASE_URL = 'http://127.0.0.1:5000';
 
 const searchBtn          = document.getElementById('searchBtn');
 const searchInput        = document.getElementById('searchInput');
@@ -33,6 +32,7 @@ const resultsBody        = document.getElementById('resultsBody');
 const resultsPanel       = document.getElementById('resultsPanel');
 const scrollHint         = document.getElementById('scrollHint');
 const personaSections    = document.getElementById('personaSections');
+const personaDropdown    = document.getElementById('personaDropdown');
 
 const activeFilters = new Set();
 let toolsOpen       = false;
@@ -112,14 +112,17 @@ const PERSONA_CONFIG = {
 ]},
 };
 
-document.querySelectorAll('.persona-item').forEach(item => {
-    item.addEventListener('click', () => {
-        document.querySelectorAll('.persona-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        activePersona = item.dataset.persona;
-    });
+// ══════════════════════════════
+// PERSONA DROPDOWN LISTENER
+// ══════════════════════════════
+personaDropdown.addEventListener('change', (e) => {
+    activePersona = e.target.value;
+    applyPersona(activePersona);
 });
 
+// ══════════════════════════════
+// TOOLS & UPLOAD
+// ══════════════════════════════
 toolsBtn.addEventListener('click', () => {
     toolsOpen = !toolsOpen;
     toolsStrip.classList.toggle('open', toolsOpen);
