@@ -1,4 +1,7 @@
-Boseman is an urban snake displacement research tool that lets researchers, conservationists, and public health workers search for snake sightings and understand why they're appearing in urban areas. It pulls live data from iNaturalist and GBIF, overlays satellite-derived habitat loss from Google Earth Engine and urban sprawl data from Copernicus, and computes a novel displacement risk score called the Urban Snake Displacement Risk Index (USDRI) — a 0-100 score that combines sighting density, habitat loss rate, urban expansion, and proximity to city centers. Built with a Flask backend and a vanilla JS frontend with Leaflet maps, dark/light theme, and a clean card-based results interface.![boseman](https://github.com/user-attachments/assets/676d1b16-2900-451a-a944-f3b67ee00cd8)
+Boseman is an urban snake displacement research tool that lets researchers, conservationists, and public health workers search for snake sightings and understand why they're appearing in urban areas. It pulls live data from iNaturalist and GBIF, overlays satellite-derived habitat loss from Google Earth Engine and urban sprawl data from Copernicus, and computes a novel displacement risk score called the Urban Snake Displacement Risk Index (USDRI) — a 0-100 score that combines sighting density, habitat loss rate, urban expansion, and proximity to city centers. Built with a Flask backend and a vanilla JS frontend with Leaflet maps, dark/light theme, and a clean card-based results interface.!
+
+![boseman](https://github.com/user-attachments/assets/78984679-6b79-4840-9fce-1a6f134b8d87)
+
 
 
 A detailed proposed paper published on zenodo about this
