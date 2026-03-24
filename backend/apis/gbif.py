@@ -17,9 +17,6 @@ SNAKE_TERMS = [
 
 
 def _parse_query(query: str) -> tuple[str | None, str | None]:
-    """
-    Returns (species, location) extracted from query.
-    """
     q = query.lower().strip()
     found_species = None
     for term in SNAKE_TERMS:
@@ -36,26 +33,23 @@ def _parse_query(query: str) -> tuple[str | None, str | None]:
     return found_species, found_location
 
 
-def search_gbif(query: str) -> list:
+def search_gbif(query: str, bbox: dict | None = None) -> list:
     try:
         species, location = _parse_query(query)
 
-        # Species only — search globally
         if species and not location:
-            return _fetch_occurrences(q=species, country=None)
+            return _fetch_occurrences(q=species, bbox=bbox)
 
-        # Location only — search all snakes, no text filter
         if location and not species:
-            return _fetch_occurrences(q=location, country=None)
+            return _fetch_occurrences(q=location, bbox=bbox)
 
-        # Both — use full query
         if species and location:
-            results = _fetch_occurrences(q=f"{species} {location}", country=None)
+            results = _fetch_occurrences(q=f"{species} {location}", bbox=bbox)
             if not results:
-                results = _fetch_occurrences(q=species, country=None)
+                results = _fetch_occurrences(q=species, bbox=bbox)
             return results
 
-        return _fetch_occurrences(q=query, country=None)
+        return _fetch_occurrences(q=query, bbox=bbox)
 
     except requests.exceptions.Timeout:
         raise Exception("GBIF request timed out")
@@ -67,7 +61,7 @@ def search_gbif(query: str) -> list:
         raise Exception(f"GBIF error: {str(e)}")
 
 
-def _fetch_occurrences(q: str, country: str | None) -> list:
+def _fetch_occurrences(q: str, bbox: dict | None = None) -> list:
     params = {
         "q":                  q,
         "taxonKey":           SERPENTES_KEY,
@@ -75,8 +69,11 @@ def _fetch_occurrences(q: str, country: str | None) -> list:
         "hasCoordinate":      True,
         "hasGeospatialIssue": False,
     }
-    if country:
-        params["country"] = country
+
+    if bbox:
+        # GBIF uses decimalLatitude and decimalLongitude range via geometry
+        params["decimalLatitude"]  = f"{bbox.get('min_lat')},{bbox.get('max_lat')}"
+        params["decimalLongitude"] = f"{bbox.get('min_lng')},{bbox.get('max_lng')}"
 
     response = requests.get(
         f"{BASE_URL}/occurrence/search",

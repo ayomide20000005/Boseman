@@ -99,21 +99,36 @@ def search():
 
     call_all = len(filters) == 0
 
+    # ── Run Nominatim first to get bbox for location filtering ──
+    bbox = None
+    if call_all or 'location' in filters:
+        try:
+            location_data = search_nominatim(query)
+            if location_data:
+                results['location'] = location_data
+                bb = location_data.get('boundingbox', [])
+                if len(bb) == 4:
+                    bbox = {
+                        'min_lat': float(bb[0]),
+                        'max_lat': float(bb[1]),
+                        'min_lng': float(bb[2]),
+                        'max_lng': float(bb[3]),
+                    }
+        except Exception as e:
+            results['errors'].append({'source': 'Nominatim', 'error': str(e)})
+
     with concurrent.futures.ThreadPoolExecutor() as executor:
 
         futures = {}
 
         if call_all or 'species' in filters or 'location' in filters:
-            futures['inaturalist'] = executor.submit(search_inaturalist, query)
+            futures['inaturalist'] = executor.submit(search_inaturalist, query, bbox)
 
         if call_all or 'species' in filters:
-            futures['gbif'] = executor.submit(search_gbif, query)
+            futures['gbif'] = executor.submit(search_gbif, query, bbox)
 
         if call_all or 'species' in filters:
             futures['wikipedia'] = executor.submit(search_wikipedia, query)
-
-        if call_all or 'location' in filters:
-            futures['nominatim'] = executor.submit(search_nominatim, query)
 
         if call_all or 'habitat' in filters:
             futures['earth_engine'] = executor.submit(get_earth_engine_data, query)
@@ -138,12 +153,6 @@ def search():
                 results['species_info'] = futures['wikipedia'].result(timeout=15)
             except Exception as e:
                 results['errors'].append({'source': 'Wikipedia', 'error': str(e)})
-
-        if 'nominatim' in futures:
-            try:
-                results['location'] = futures['nominatim'].result(timeout=15)
-            except Exception as e:
-                results['errors'].append({'source': 'Nominatim', 'error': str(e)})
 
         if 'earth_engine' in futures:
             try:
