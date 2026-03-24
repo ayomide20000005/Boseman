@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boseman - Urban Snake Displacement Search</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+    <!-- ══════════════════════════════
+         SEARCH STAGE
+         ═══════════════════════════════ -->
+    <div id="searchStage" class="stage">
+        <div class="hero">
+            <h1 class="logo">Boseman</h1>
+            <p class="tagline">Urban Snake Displacement Search</p>
+        </div>
+
+        <div class="persona-list">
+            <div class="persona-item active" data-persona="Researcher">🔬 Researcher</div>
+            <div class="persona-item" data-persona="Health Worker">🏥 Health Worker</div>
+            <div class="persona-item" data-persona="Resident">🏘️ Resident</div>
+            <div class="persona-item" data-persona="Urban Planner">🏙️ Urban Planner</div>
+            <div class="persona-item" data-persona="Wildlife Responder">🐍 Wildlife Responder</div>
+            <div class="persona-item" data-persona="Farmer">🌾 Farmer</div>
+            <div class="persona-item" data-persona="Journalist">📰 Journalist</div>
+            <div class="persona-item" data-persona="Student">📚 Student</div>
+            <div class="persona-item" data-persona="Tour Guide">🗺️ Tour Guide</div>
+            <div class="persona-item" data-persona="First Responder">🚨 First Responder</div>
+        </div>
+
+        <div class="search-container">
+            <div id="toolsStrip" class="tools-strip">
+                <div class="tool-chip" data-tool="species">Species</div>
+                <div class="tool-chip" data-tool="location">Location</div>
+                <div class="tool-chip" data-tool="habitat">Habitat Loss</div>
+                <div class="tool-chip" data-tool="urban">Urban Sprawl</div>
+            </div>
+
+            <div id="searchBar" class="search-bar">
+                <button id="toolsBtn" class="tools-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    Tools
+                </button>
+                <div class="divider"></div>
+                <input id="searchInput" class="search-input" type="text" placeholder="Search snakes in your area...">
+                <button id="searchBtn" class="search-btn">
+                    <span class="b-letter">B</span>
+                </button>
+                <div class="plus-wrap">
+                    <button id="plusBtn" class="plus-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                    <div id="uploadDropdown" class="upload-dropdown">
+                        <label class="upload-option">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <path d="m21 15-5-5L5 21"></path>
+                            </svg>
+                            Upload Image
+                            <input id="imageUpload" type="file" accept="image/*" hidden>
+                        </label>
+                        <label class="upload-option">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            Upload File
+                            <input id="fileUpload" type="file" hidden>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="activeBar" class="active-bar"></div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         RESULTS PAGE
+         ═══════════════════════════════ -->
+    <div id="resultsPage" class="results-page">
+        <div class="results-topbar">
+            <button id="backBtn" class="back-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m15 18-6-6 6-6"></path>
+                </svg>
+                Back
+            </button>
+            <div class="results-search-wrap">
+                <input id="resultsSearchInput" class="results-search-input" type="text" placeholder="Search again...">
+                <button id="resultsSearchBtn" class="results-search-btn">
+                    <span class="b-letter-sm">B</span>
+                </button>
+            </div>
+            <div class="topbar-right">
+                <span id="resultsQueryLabel" class="results-query-label"></span>
+                <div id="activePersonaBadge" class="active-persona-badge"></div>
+                <button id="mapExpandBtn" class="map-expand-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+                    </svg>
+                    Show Map
+                </button>
+            </div>
+        </div>
+
+        <div id="resultsBody" class="results-body">
+            <div id="resultsPanel" class="results-panel">
+                <div id="scrollHint" class="scroll-hint">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m6 9 6 6 6-6"></path>
+                    </svg>
+                    Scroll for more
+                </div>
+
+                <div id="statsBar" class="stats-bar"></div>
+
+                <div id="riskHero" class="section-block risk-hero" style="display:none;">
+                    <div class="risk-score-wrap">
+                        <div id="riskCircle" class="risk-score-circle">
+                            <span id="riskNum" class="risk-num">--</span>
+                            <span class="risk-max">/100</span>
+                        </div>
+                        <div class="risk-info">
+                            <span id="riskLabel" class="risk-label">Calculating...</span>
+                            <p id="riskInterpretation" class="risk-interpretation"></p>
+                        </div>
+                    </div>
+                    <div id="riskComponents" class="risk-components"></div>
+                </div>
+
+                <div id="personaSections"></div>
+            </div>
+
+            <div class="map-panel">
+                <div class="map-panel-header">
+                    <div class="map-panel-title">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon>
+                            <line x1="9" y1="3" x2="9" y2="18"></line>
+                            <line x1="15" y1="6" x2="15" y2="21"></line>
+                        </svg>
+                        Map
+                    </div>
+                    <div class="layer-controls">
+                        <button class="layer-btn active" data-layer="sightings">Sightings</button>
+                        <button class="layer-btn" data-layer="habitat">Habitat Loss</button>
+                        <button class="layer-btn" data-layer="urban">Urban Sprawl</button>
+                    </div>
+                    <button id="mapCollapseBtn" class="map-collapse-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="m15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+                        </svg>
+                        Close Map
+                    </button>
+                </div>
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
