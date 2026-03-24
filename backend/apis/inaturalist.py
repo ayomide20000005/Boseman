@@ -26,10 +26,6 @@ SNAKE_TERMS = [
 
 
 def _parse_query(query: str) -> tuple[str | None, str | None]:
-    """
-    Returns (species, location) extracted from query.
-    Either can be None if not found.
-    """
     q = query.lower().strip()
     found_species = None
     for term in SNAKE_TERMS:
@@ -46,27 +42,23 @@ def _parse_query(query: str) -> tuple[str | None, str | None]:
     return found_species, found_location
 
 
-def search_inaturalist(query: str) -> list:
+def search_inaturalist(query: str, bbox: dict | None = None) -> list:
     try:
         species, location = _parse_query(query)
 
-        # Species only — search globally
         if species and not location:
-            return _fetch_observations(place_guess=None, taxon_id=85553)
+            return _fetch_observations(place_guess=None, taxon_id=85553, bbox=bbox)
 
-        # Location only — search all snakes in that location
         if location and not species:
-            return _fetch_observations(place_guess=location, taxon_id=85553)
+            return _fetch_observations(place_guess=location, taxon_id=85553, bbox=bbox)
 
-        # Both — search species in location
         if species and location:
-            results = _fetch_observations(place_guess=location, taxon_id=85553)
+            results = _fetch_observations(place_guess=location, taxon_id=85553, bbox=bbox)
             if not results:
-                results = _fetch_observations(place_guess=None, taxon_id=85553)
+                results = _fetch_observations(place_guess=None, taxon_id=85553, bbox=bbox)
             return results
 
-        # Fallback
-        return _fetch_observations(place_guess=query, taxon_id=85553)
+        return _fetch_observations(place_guess=query, taxon_id=85553, bbox=bbox)
 
     except requests.exceptions.Timeout:
         raise Exception("iNaturalist request timed out")
@@ -78,7 +70,7 @@ def search_inaturalist(query: str) -> list:
         raise Exception(f"iNaturalist error: {str(e)}")
 
 
-def _fetch_observations(place_guess: str | None, taxon_id: int) -> list:
+def _fetch_observations(place_guess: str | None, taxon_id: int, bbox: dict | None = None) -> list:
     params = {
         "taxon_id":  taxon_id,
         "per_page":  50,
@@ -87,7 +79,14 @@ def _fetch_observations(place_guess: str | None, taxon_id: int) -> list:
         "has[]":     "geo",
         "photos":    "true",
     }
-    if place_guess:
+
+    if bbox:
+        # Use bounding box for precise location filtering
+        params["nelat"] = bbox.get("max_lat")
+        params["nelng"] = bbox.get("max_lng")
+        params["swlat"] = bbox.get("min_lat")
+        params["swlng"] = bbox.get("min_lng")
+    elif place_guess:
         params["place_guess"] = place_guess
 
     response = requests.get(
