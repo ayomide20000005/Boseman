@@ -45,3 +45,4 @@ typing_extensions
 uritemplate
 urllib3
 Werkzeug
+gunicorn
