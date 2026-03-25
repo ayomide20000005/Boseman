@@ -1,6 +1,6 @@
 // ── Boseman app.js ──
 // NOTE: We will update this URL when the backend is deployed to Render
-const API_BASE_URL = 'http://127.0.0.1:5000';
+const API_BASE_URL = 'https://boseman-backend.onrender.com';
 
 const searchBtn          = document.getElementById('searchBtn');
 const searchInput        = document.getElementById('searchInput');
