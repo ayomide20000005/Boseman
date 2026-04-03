@@ -7,7 +7,7 @@ load_dotenv()
 
 GEE_PROJECT = os.getenv("GEE_PROJECT")
 GEE_KEY_JSON = os.getenv("GEE_KEY_JSON")
-KEY_FILE = os.path.join(os.path.dirname(__file__), "eternal-galaxy-485500-g4-6f1c7aa78004.json")
+KEY_FILE = os.path.join(os.path.dirname(__file__), "eternal-galaxy-485500-g4-e4550197b72b.json")
 
 
 def _init_ee():
