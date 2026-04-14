@@ -18,9 +18,12 @@ const searchPage       = document.getElementById('searchPage');
 const resultPage       = document.getElementById('resultPage');
 const searchInput      = document.getElementById('searchInput');
 const searchBtn        = document.getElementById('searchBtn');
-const autocompleteList = document.getElementById('autocompleteList');
-const recentChips      = document.getElementById('recentChips');
-const recentSearches   = document.getElementById('recentSearches');
+const searchDropdown   = document.getElementById('searchDropdown');
+const recentSection    = document.getElementById('recentSection');
+const recentItems      = document.getElementById('recentItems');
+const clearAllBtn      = document.getElementById('clearAllBtn');
+const autocompleteSection = document.getElementById('autocompleteSection');
+const autocompleteItems   = document.getElementById('autocompleteItems');
 
 const backBtn          = document.getElementById('backBtn');
 const topbarInput      = document.getElementById('topbarInput');
@@ -31,6 +34,8 @@ const cardHandle       = document.getElementById('cardHandle');
 const cardCollapsed    = document.getElementById('cardCollapsed');
 const cardExpanded     = document.getElementById('cardExpanded');
 const cardLocationName = document.getElementById('cardLocationName');
+const cardSkeleton     = document.getElementById('cardSkeleton');
+const cardContent      = document.getElementById('cardContent');
 const cardVerdict      = document.getElementById('cardVerdict');
 const cardSummary      = document.getElementById('cardSummary');
 
@@ -40,20 +45,19 @@ const compareBtn       = document.getElementById('compareBtn');
 const shareBtn         = document.getElementById('shareBtn');
 const collapseBtn      = document.getElementById('collapseBtn');
 
-const scoreNum         = document.getElementById('scoreNum');
-const scoreLabelEl     = document.getElementById('scoreLabel');
+const scoreNum            = document.getElementById('scoreNum');
+const scoreLabelEl        = document.getElementById('scoreLabel');
 const scoreInterpretation = document.getElementById('scoreInterpretation');
-const gaugeFill        = document.getElementById('gaugeFill');
-const subScores        = document.getElementById('subScores');
-const statsRow         = document.getElementById('statsRow');
-const sightingsList    = document.getElementById('sightingsList');
-const sightingsCount   = document.getElementById('sightingsCount');
-const speciesSection   = document.getElementById('speciesSection');
-const speciesBody      = document.getElementById('speciesBody');
+const gaugeFill           = document.getElementById('gaugeFill');
+const subScores           = document.getElementById('subScores');
+const statsRow            = document.getElementById('statsRow');
+const sightingsList       = document.getElementById('sightingsList');
+const sightingsCount      = document.getElementById('sightingsCount');
+const speciesSection      = document.getElementById('speciesSection');
+const speciesBody         = document.getElementById('speciesBody');
 
 const comparePanel     = document.getElementById('comparePanel');
 const closeCompare     = document.getElementById('closeCompare');
-const compareTabs      = document.querySelectorAll('.compare-tab');
 const compareColA      = document.getElementById('compareColA');
 const compareColB      = document.getElementById('compareColB');
 const compareInputA    = document.getElementById('compareInputA');
@@ -70,6 +74,7 @@ let currentData    = null;
 let currentQuery   = '';
 let cardIsExpanded = false;
 let autocompleteTimer = null;
+let dropdownOpen   = false;
 
 // ══════════════════════════════════════
 // RECENT SEARCHES
@@ -83,66 +88,116 @@ function getRecent() {
 function saveRecent(query) {
     let recents = getRecent().filter(r => r.toLowerCase() !== query.toLowerCase());
     recents.unshift(query);
-    recents = recents.slice(0, 6);
+    recents = recents.slice(0, 8);
     localStorage.setItem(RECENT_KEY, JSON.stringify(recents));
 }
 
-function renderRecent() {
-    const recents = getRecent();
-    if (recents.length === 0) {
-        recentSearches.style.display = 'none';
-        return;
-    }
-    recentSearches.style.display = 'flex';
-    recentChips.innerHTML = '';
-    recents.forEach(r => {
-        const chip = document.createElement('button');
-        chip.className = 'recent-chip';
-        chip.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${r}`;
-        chip.addEventListener('click', () => triggerSearch(r));
-        recentChips.appendChild(chip);
-    });
+function removeRecent(query) {
+    let recents = getRecent().filter(r => r.toLowerCase() !== query.toLowerCase());
+    localStorage.setItem(RECENT_KEY, JSON.stringify(recents));
+    renderDropdown(searchInput.value.trim());
+}
+
+function clearAllRecent() {
+    localStorage.removeItem(RECENT_KEY);
+    renderDropdown(searchInput.value.trim());
 }
 
 // ══════════════════════════════════════
-// AUTOCOMPLETE (Nominatim)
+// DROPDOWN
+// ══════════════════════════════════════
+
+function openDropdown() {
+    searchDropdown.classList.add('open');
+    dropdownOpen = true;
+}
+
+function closeDropdown() {
+    searchDropdown.classList.remove('open');
+    dropdownOpen = false;
+}
+
+function renderDropdown(query) {
+    const recents = getRecent();
+
+    if (!query) {
+        // Show recent only
+        autocompleteSection.style.display = 'none';
+        if (recents.length === 0) {
+            recentSection.style.display = 'none';
+            closeDropdown();
+            return;
+        }
+        recentSection.style.display = 'block';
+        recentItems.innerHTML = '';
+        recents.forEach(r => {
+            const item = document.createElement('div');
+            item.className = 'dropdown-item';
+            item.innerHTML = `
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span class="dropdown-item-text">${r}</span>
+                <button class="dropdown-item-remove" title="Remove" data-query="${r}">✕</button>
+            `;
+            item.addEventListener('click', (e) => {
+                if (e.target.closest('.dropdown-item-remove')) return;
+                closeDropdown();
+                triggerSearch(r);
+            });
+            item.querySelector('.dropdown-item-remove').addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeRecent(r);
+            });
+            recentItems.appendChild(item);
+        });
+        openDropdown();
+    } else {
+        // Show autocomplete, hide recent
+        recentSection.style.display = 'none';
+        autocompleteSection.style.display = 'block';
+        fetchAutocomplete(query);
+    }
+}
+
+clearAllBtn.addEventListener('click', clearAllRecent);
+
+// ══════════════════════════════════════
+// AUTOCOMPLETE
 // ══════════════════════════════════════
 
 function fetchAutocomplete(query) {
-    if (!query || query.length < 2) {
-        autocompleteList.classList.remove('open');
-        return;
-    }
-    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`)
-        .then(r => r.json())
-        .then(results => {
-            autocompleteList.innerHTML = '';
-            if (!results.length) { autocompleteList.classList.remove('open'); return; }
-            results.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'autocomplete-item';
-                div.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${item.display_name}`;
-                div.addEventListener('click', () => {
-                    searchInput.value = item.display_name;
-                    autocompleteList.classList.remove('open');
-                    triggerSearch(item.display_name);
+    clearTimeout(autocompleteTimer);
+    autocompleteTimer = setTimeout(() => {
+        if (query.length < 2) { closeDropdown(); return; }
+        fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`)
+            .then(r => r.json())
+            .then(results => {
+                autocompleteItems.innerHTML = '';
+                if (!results.length) { closeDropdown(); return; }
+                results.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'dropdown-item';
+                    div.innerHTML = `
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <span class="dropdown-item-text">${item.display_name}</span>
+                    `;
+                    div.addEventListener('click', () => {
+                        searchInput.value = item.display_name;
+                        closeDropdown();
+                        triggerSearch(item.display_name);
+                    });
+                    autocompleteItems.appendChild(div);
                 });
-                autocompleteList.appendChild(div);
-            });
-            autocompleteList.classList.add('open');
-        })
-        .catch(() => autocompleteList.classList.remove('open'));
+                openDropdown();
+            })
+            .catch(() => closeDropdown());
+    }, 300);
 }
 
-searchInput.addEventListener('input', () => {
-    clearTimeout(autocompleteTimer);
-    autocompleteTimer = setTimeout(() => fetchAutocomplete(searchInput.value.trim()), 300);
-});
+searchInput.addEventListener('focus', () => renderDropdown(searchInput.value.trim()));
+searchInput.addEventListener('input', () => renderDropdown(searchInput.value.trim()));
 
 document.addEventListener('click', e => {
-    if (!e.target.closest('.search-wrap')) {
-        autocompleteList.classList.remove('open');
-    }
+    if (!e.target.closest('.search-wrap')) closeDropdown();
 });
 
 // ══════════════════════════════════════
@@ -154,6 +209,7 @@ function triggerSearch(query) {
     if (!query) return;
     currentQuery = query;
     saveRecent(query);
+    closeDropdown();
     showResultPage(query);
     fetchResults(query);
 }
@@ -164,34 +220,33 @@ topbarSearchBtn.addEventListener('click', () => { const q = topbarInput.value.tr
 topbarInput.addEventListener('keydown', e => { if (e.key === 'Enter') { const q = topbarInput.value.trim(); if (q) triggerSearch(q); } });
 
 // ══════════════════════════════════════
-// PAGE TRANSITIONS
+// PAGE TRANSITIONS — Google style
 // ══════════════════════════════════════
 
 function showResultPage(query) {
+    // Instantly switch pages — no loading overlay
     searchPage.classList.add('hidden');
     resultPage.classList.remove('hidden');
     topbarInput.value = query;
 
-    // Reset card
+    // Show location name immediately
+    cardLocationName.textContent = query;
+
+    // Show skeleton while loading
+    cardSkeleton.style.display = 'flex';
+    cardContent.classList.add('hidden');
     cardExpanded.classList.add('hidden');
     cardCollapsed.classList.remove('hidden');
     cardIsExpanded = false;
-    cardLocationName.textContent = query;
-    cardVerdict.textContent = 'Analysing…';
-    cardVerdict.className = 'card-verdict';
-    cardSummary.textContent = '';
 
-    // Init map
+    // Init map immediately
     initMap();
-    showLoading(true);
 }
 
 backBtn.addEventListener('click', () => {
     resultPage.classList.add('hidden');
     searchPage.classList.remove('hidden');
     searchInput.value = currentQuery;
-    renderRecent();
-    autocompleteList.classList.remove('open');
 });
 
 // ══════════════════════════════════════
@@ -207,12 +262,13 @@ function fetchResults(query) {
     .then(r => r.json())
     .then(data => {
         currentData = data;
-        showLoading(false);
         renderCard(data);
         plotPins(data);
     })
     .catch(() => {
-        showLoading(false);
+        // Hide skeleton, show error
+        cardSkeleton.style.display = 'none';
+        cardContent.classList.remove('hidden');
         cardVerdict.textContent = 'Could not connect to server';
         cardVerdict.className = 'card-verdict';
         cardSummary.textContent = 'Make sure the backend is running.';
@@ -224,12 +280,12 @@ function fetchResults(query) {
 // ══════════════════════════════════════
 
 function renderCard(data) {
-    const risk     = data.risk_score || {};
+    const risk        = data.risk_score  || {};
     const sightings   = data.sightings   || [];
     const occurrences = data.occurrences || [];
     const allResults  = [...sightings, ...occurrences];
     const info        = data.species_info || {};
-    const location    = data.location || {};
+    const location    = data.location    || {};
 
     // Location name
     const locName = location.display_name
@@ -250,6 +306,10 @@ function renderCard(data) {
     cardVerdict.className   = `card-verdict ${slug}`;
     cardSummary.textContent = risk.interpretation || '';
 
+    // Hide skeleton, show content
+    cardSkeleton.style.display = 'none';
+    cardContent.classList.remove('hidden');
+
     // Score gauge
     const score = risk.score || 0;
     scoreNum.textContent = score;
@@ -257,7 +317,6 @@ function renderCard(data) {
     scoreLabelEl.className   = `score-label ${slug}`;
     scoreInterpretation.textContent = risk.interpretation || '';
 
-    // Arc: total arc length ≈ 173 (half circle)
     const arc = Math.round((score / 100) * 173);
     gaugeFill.style.strokeDasharray = `${arc} 173`;
     gaugeFill.className = `gauge-fill ${slug}`;
@@ -346,7 +405,6 @@ function renderSightings(results, offset) {
                 </div>
             </div>
         `;
-        // Click to fly map to this pin
         el.addEventListener('click', () => {
             if (item.latitude && item.longitude && map) {
                 map.flyTo([item.latitude, item.longitude], 13, { animate: true, duration: 1.2 });
@@ -355,7 +413,6 @@ function renderSightings(results, offset) {
         sightingsList.appendChild(el);
     });
 
-    // Remove old show-more if any
     const oldBtn = sightingsList.querySelector('.show-more');
     if (oldBtn) oldBtn.remove();
 
@@ -376,9 +433,7 @@ function renderSightings(results, offset) {
 // ══════════════════════════════════════
 
 viewScoreBtn.addEventListener('click', expandCard);
-cardHandle.addEventListener('click', () => {
-    if (cardIsExpanded) collapseCard(); else expandCard();
-});
+cardHandle.addEventListener('click', () => { if (cardIsExpanded) collapseCard(); else expandCard(); });
 collapseBtn.addEventListener('click', collapseCard);
 
 function expandCard() {
@@ -400,13 +455,11 @@ function collapseCard() {
 function initMap() {
     if (map) { map.invalidateSize(); return; }
     map = L.map('map', { zoomControl: false }).setView([20, 0], 2);
-
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap © CARTO',
         subdomains: 'abcd',
         maxZoom: 19
     }).addTo(map);
-
     L.control.zoom({ position: 'topright' }).addTo(map);
     markersLayer = L.layerGroup().addTo(map);
 }
@@ -427,13 +480,11 @@ function plotPins(data) {
         if (!item.latitude || !item.longitude) return;
         const isVenomous = VENOMOUS_TERMS.some(t => (item.common_name || item.species || '').toLowerCase().includes(t));
         const color = isVenomous ? '#b03000' : (item.source === 'iNaturalist' ? '#3d6b8e' : '#1a7a45');
-
         const icon = L.divIcon({
             className: '',
             html: `<div style="width:10px;height:10px;background:${color};border:2px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.25);"></div>`,
             iconSize: [10, 10], iconAnchor: [5, 5]
         });
-
         const marker = L.marker([item.latitude, item.longitude], { icon });
         marker.bindPopup(`
             <div style="font-family:'DM Sans',sans-serif;font-size:13px;min-width:150px;line-height:1.5;">
@@ -454,7 +505,6 @@ function plotPins(data) {
 }
 
 viewMapBtn.addEventListener('click', () => {
-    // Collapse card to see map
     collapseCard();
     if (map) map.invalidateSize();
 });
@@ -489,10 +539,9 @@ compareBtn.addEventListener('click', () => {
 
 closeCompare.addEventListener('click', () => comparePanel.classList.add('hidden'));
 
-// Tab switching (mobile)
-compareTabs.forEach(tab => {
+document.querySelectorAll('.compare-tab').forEach(tab => {
     tab.addEventListener('click', () => {
-        compareTabs.forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.compare-tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         const idx = tab.dataset.tab;
         compareColA.classList.toggle('active', idx === '0');
@@ -500,13 +549,12 @@ compareTabs.forEach(tab => {
     });
 });
 
-// Compare search buttons
 document.querySelectorAll('.compare-search-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        const col   = btn.dataset.col;
-        const input = col === 'A' ? compareInputA : compareInputB;
+        const col    = btn.dataset.col;
+        const input  = col === 'A' ? compareInputA : compareInputB;
         const result = col === 'A' ? compareResultA : compareResultB;
-        const query = input.value.trim();
+        const query  = input.value.trim();
         if (!query) return;
         result.innerHTML = `<div style="padding:12px;color:var(--text-muted);font-size:0.82rem;">Searching…</div>`;
         fetch(`${API_BASE_URL}/search`, {
@@ -526,11 +574,6 @@ function renderCompareResult(container, data) {
     const risk = data.risk_score || {};
     const slug = (risk.label || 'unknown').toLowerCase();
     const all  = [...(data.sightings || []), ...(data.occurrences || [])];
-    const location = data.location || {};
-    const locName = location.display_name
-        ? location.display_name.split(',').slice(0, 2).join(',').trim()
-        : '—';
-
     container.innerHTML = `
         <div class="compare-verdict ${slug}">
             <span class="compare-verdict-label ${slug}">${risk.label || 'Unknown'} — ${risk.score || '—'}/100</span>
@@ -545,15 +588,7 @@ function renderCompareResult(container, data) {
 }
 
 // ══════════════════════════════════════
-// LOADING
-// ══════════════════════════════════════
-
-function showLoading(show) {
-    loadingOverlay.classList.toggle('hidden', !show);
-}
-
-// ══════════════════════════════════════
-// URL PARAM — allow direct result links
+// URL PARAM
 // ══════════════════════════════════════
 
 function checkUrlParam() {
@@ -566,5 +601,4 @@ function checkUrlParam() {
 // INIT
 // ══════════════════════════════════════
 
-renderRecent();
 checkUrlParam();

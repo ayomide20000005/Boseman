@@ -180,8 +180,8 @@ html, body {
     transform: scale(1.05);
 }
 
-/* Autocomplete */
-.autocomplete-list {
+/* Unified search dropdown */
+.search-dropdown {
     position: absolute;
     top: calc(100% + 6px);
     left: 0; right: 0;
@@ -194,65 +194,122 @@ html, body {
     display: none;
 }
 
-.autocomplete-list.open { display: block; }
+.search-dropdown.open { display: block; }
 
-.autocomplete-item {
+.dropdown-section { padding: 8px 0; }
+.dropdown-section + .dropdown-section { border-top: 1px solid var(--border); }
+
+.dropdown-section-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 11px 16px;
-    font-size: 0.88rem;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: background 0.15s;
-    border-bottom: 1px solid var(--border);
+    justify-content: space-between;
+    padding: 4px 16px 6px;
 }
 
-.autocomplete-item:last-child { border-bottom: none; }
-.autocomplete-item:hover { background: var(--accent-light); color: var(--text-primary); }
-
-.autocomplete-item svg { color: var(--text-muted); flex-shrink: 0; }
-
-/* Recent searches */
-.recent-searches {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 14px;
-    padding: 0 4px;
-    flex-wrap: wrap;
-}
-
-.recent-label {
-    font-size: 0.7rem;
-    font-weight: 500;
+.dropdown-section-label {
+    font-size: 0.68rem;
+    font-weight: 600;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    flex-shrink: 0;
 }
 
-.recent-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.dropdown-clear-all {
+    background: transparent;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    color: var(--accent);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
 
-.recent-chip {
-    display: inline-flex;
+.dropdown-clear-all:hover { background: var(--accent-light); }
+
+.dropdown-items { display: flex; flex-direction: column; }
+
+.dropdown-item {
+    display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 5px 12px;
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: 20px;
-    font-size: 0.78rem;
+    gap: 10px;
+    padding: 9px 16px;
+    font-size: 0.88rem;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    transition: background 0.12s;
+    border: none;
+    background: transparent;
+    text-align: left;
+    width: 100%;
+    font-family: var(--font-body);
 }
 
-.recent-chip:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: var(--accent-light);
+.dropdown-item:hover { background: var(--accent-light); color: var(--text-primary); }
+
+.dropdown-item svg { color: var(--text-muted); flex-shrink: 0; }
+
+.dropdown-item-text { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.dropdown-item-remove {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s, color 0.15s;
+    font-size: 0.75rem;
+    padding: 0;
 }
+
+.dropdown-item:hover .dropdown-item-remove { opacity: 1; }
+.dropdown-item-remove:hover { background: var(--border); color: var(--text-primary); }
+
+/* Skeleton loader */
+.card-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 0;
+}
+
+.skeleton-line {
+    height: 14px;
+    background: linear-gradient(90deg, var(--border) 25%, var(--bg) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    border-radius: 7px;
+    animation: shimmer 1.4s infinite;
+}
+
+.skeleton-line.wide   { width: 75%; height: 20px; }
+.skeleton-line.medium { width: 55%; }
+
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.skeleton-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.skeleton-btn {
+    height: 32px;
+    width: 90px;
+    border-radius: 20px;
+    background: linear-gradient(90deg, var(--border) 25%, var(--bg) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+}
+
+.card-content.hidden { display: none; }
 
 /* ═══════════════════════════
    RESULT PAGE

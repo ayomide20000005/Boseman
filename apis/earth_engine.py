@@ -26,7 +26,7 @@ def _init_ee():
     ee.Initialize(credentials, project=GEE_PROJECT)
 
 
-def get_earth_engine_data(query: str, bbox: dict = None) -> dict | None:
+def get_earth_engine_data_disabled(query: str, bbox: dict = None) -> dict | None:
     try:
         _init_ee()
 
@@ -70,3 +70,6 @@ def get_earth_engine_data(query: str, bbox: dict = None) -> dict | None:
     except Exception as e:
         print(f"GEE Error: {e}")
         return None
+
+def get_earth_engine_data(query, bbox=None):
+    return None
