@@ -3,7 +3,7 @@
 // Urban Snake Displacement Search Engine
 // ══════════════════════════════════════
 
-const API_BASE_URL  = 'http://127.0.0.1:5000';
+const API_BASE_URL = 'https://boseman-backend.onrender.com';
 const RECENT_KEY    = 'boseman_recent';
 const CARDS_PER_PAGE = 10;
 
