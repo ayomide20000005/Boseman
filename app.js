@@ -1,7 +1,3 @@
-// ══════════════════════════════════════
-// BOSEMAN — app.js
-// Urban Snake Displacement Search Engine
-// ══════════════════════════════════════
 
 const API_BASE_URL = 'https://boseman-backend.onrender.com';
 const RECENT_KEY    = 'boseman_recent';
@@ -313,16 +309,10 @@ function fetchResults(query) {
         plotPins(data);
         populateDrawer(data);
     })
-    .catch(() => {
-        resultSkeletons.style.display = 'none';
-        speciesCards.classList.remove('hidden');
-        speciesCards.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:0.9rem;grid-column:1/-1;">Could not connect to backend. Make sure Flask is running.</div>`;
-    });
+   .catch(() => {
+    resultSkeletons.style.display = 'none';
+});
 }
-
-// ══════════════════════════════════════
-// FILTER CHIPS
-// ══════════════════════════════════════
 
 function updateFilterChips() {
     document.querySelectorAll('.filter-chip').forEach(chip => {
