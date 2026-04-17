@@ -183,10 +183,6 @@ function renderDropdown(query) {
 
 clearAllBtn.addEventListener('click', clearAllRecent);
 
-// ══════════════════════════════════════
-// AUTOCOMPLETE
-// ══════════════════════════════════════
-
 function fetchAutocomplete(query) {
     clearTimeout(autocompleteTimer);
     autocompleteTimer = setTimeout(() => {
