@@ -149,9 +149,6 @@ function toggleSaveLocation() {
     localStorage.setItem(SAVED_KEY, JSON.stringify(saved.slice(0, 20)));
 }
 
-// ══════════════════════════════════════
-// DROPDOWN
-// ══════════════════════════════════════
 
 function openDropdown()  { searchDropdown.classList.add('open'); }
 function closeDropdown() { searchDropdown.classList.remove('open'); }
