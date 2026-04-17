@@ -213,10 +213,6 @@ searchInput.addEventListener('focus', () => renderDropdown(searchInput.value.tri
 searchInput.addEventListener('input', () => renderDropdown(searchInput.value.trim()));
 document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) closeDropdown(); });
 
-// ══════════════════════════════════════
-// SEARCH TRIGGER
-// ══════════════════════════════════════
-
 function triggerSearch(query) {
     if (!query) query = searchInput.value.trim();
     if (!query) return;
@@ -232,16 +228,11 @@ searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') triggerSea
 topbarSearchBtn.addEventListener('click', () => { const q = topbarInput.value.trim(); if (q) triggerSearch(q); });
 topbarInput.addEventListener('keydown', e => { if (e.key === 'Enter') { const q = topbarInput.value.trim(); if (q) triggerSearch(q); } });
 
-// ══════════════════════════════════════
-// PAGE TRANSITION
-// ══════════════════════════════════════
-
 function showResultPage(query) {
     searchPage.classList.add('hidden');
     resultPage.classList.remove('hidden');
     topbarInput.value = query;
 
-    // Reset
     resultTitle.textContent = query;
     resultSubtitle.textContent = '';
     riskBadge.classList.add('hidden');
