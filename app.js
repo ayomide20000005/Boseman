@@ -5,7 +5,8 @@
 
 const API_BASE_URL = 'https://boseman-backend.onrender.com';
 const RECENT_KEY    = 'boseman_recent';
-const CARDS_PER_PAGE = 10;
+const SAVED_KEY     = 'boseman_saved';
+const CARDS_PER_PAGE = 12;
 
 const VENOMOUS_TERMS = [
     'cobra','mamba','viper','adder','rattlesnake','krait',
@@ -37,6 +38,9 @@ const backBtn             = document.getElementById('backBtn');
 const topbarInput         = document.getElementById('topbarInput');
 const topbarSearchBtn     = document.getElementById('topbarSearchBtn');
 const showMapBtn          = document.getElementById('showMapBtn');
+const exportBtn           = document.getElementById('exportBtn');
+const saveLocationBtn     = document.getElementById('saveLocationBtn');
+const openDrawerBtn       = document.getElementById('openDrawerBtn');
 
 const resultTitle         = document.getElementById('resultTitle');
 const resultSubtitle      = document.getElementById('resultSubtitle');
@@ -45,11 +49,20 @@ const riskBadgeNum        = document.getElementById('riskBadgeNum');
 const riskBadgeLevel      = document.getElementById('riskBadgeLevel');
 const safetyRibbon        = document.getElementById('safetyRibbon');
 const safetyText          = document.getElementById('safetyText');
+const filterChips         = document.getElementById('filterChips');
+const trendsSection       = document.getElementById('trendsSection');
+const toggleTrendsBtn     = document.getElementById('toggleTrendsBtn');
+const trendsContent       = document.getElementById('trendsContent');
 const resultSkeletons     = document.getElementById('resultSkeletons');
 const speciesCards        = document.getElementById('speciesCards');
 const loadMoreWrap        = document.getElementById('loadMoreWrap');
 const loadMoreBtn         = document.getElementById('loadMoreBtn');
 const showingCount        = document.getElementById('showingCount');
+
+const rightDrawer         = document.getElementById('rightDrawer');
+const closeDrawerBtn      = document.getElementById('closeDrawerBtn');
+const drawerContent       = document.getElementById('drawerContent');
+const drawerOverlay       = document.getElementById('drawerOverlay');
 
 const mapPanel            = document.getElementById('mapPanel');
 const closeMapBtn         = document.getElementById('closeMapBtn');
@@ -62,6 +75,7 @@ const compareInputB       = document.getElementById('compareInputB');
 const compareResultA      = document.getElementById('compareResultA');
 const compareResultB      = document.getElementById('compareResultB');
 
+const scrollTopBtn        = document.getElementById('scrollTopBtn');
 const mobNavResults       = document.getElementById('mobNavResults');
 const mobNavMap           = document.getElementById('mobNavMap');
 const mobNavCompare       = document.getElementById('mobNavCompare');
@@ -73,7 +87,9 @@ let markersLayer    = null;
 let currentData     = null;
 let currentQuery    = '';
 let allResults      = [];
+let filteredResults = [];
 let visibleCount    = 0;
+let currentFilter   = 'all';
 let autocompleteTimer = null;
 
 // ══════════════════════════════════════
@@ -100,6 +116,41 @@ function removeRecent(q) {
 function clearAllRecent() {
     localStorage.removeItem(RECENT_KEY);
     renderDropdown(searchInput.value.trim());
+}
+
+// ══════════════════════════════════════
+// SAVED LOCATIONS
+// ══════════════════════════════════════
+
+function getSaved() {
+    try { return JSON.parse(localStorage.getItem(SAVED_KEY)) || []; }
+    catch { return []; }
+}
+
+function isSaved(query) {
+    return getSaved().some(s => s.query.toLowerCase() === query.toLowerCase());
+}
+
+function toggleSaveLocation() {
+    const saved = getSaved();
+    const existing = saved.findIndex(s => s.query.toLowerCase() === currentQuery.toLowerCase());
+    
+    if (existing >= 0) {
+        saved.splice(existing, 1);
+        saveLocationBtn.classList.remove('active');
+        saveLocationBtn.querySelector('svg').style.fill = 'none';
+        alert('Location removed from saved');
+    } else {
+        saved.unshift({
+            query: currentQuery,
+            date: new Date().toISOString(),
+            data: currentData
+        });
+        saveLocationBtn.classList.add('active');
+        saveLocationBtn.querySelector('svg').style.fill = 'currentColor';
+        alert('Location saved! Access it from your account page.');
+    }
+    localStorage.setItem(SAVED_KEY, JSON.stringify(saved.slice(0, 20)));
 }
 
 // ══════════════════════════════════════
@@ -206,17 +257,35 @@ function showResultPage(query) {
     resultSubtitle.textContent = '';
     riskBadge.classList.add('hidden');
     safetyRibbon.classList.add('hidden');
-    resultSkeletons.style.display = 'flex';
+    filterChips.classList.add('hidden');
+    trendsSection.classList.add('hidden');
+    trendsContent.classList.add('hidden');
+    toggleTrendsBtn.classList.remove('open');
+    resultSkeletons.style.display = 'grid';
     speciesCards.classList.add('hidden');
     speciesCards.innerHTML = '';
     loadMoreWrap.classList.add('hidden');
+    rightDrawer.classList.add('hidden');
+    drawerOverlay.classList.add('hidden');
     allResults = [];
+    filteredResults = [];
     visibleCount = 0;
+    currentFilter = 'all';
+    updateFilterChips();
 
     // Reset panels
     mapPanel.classList.add('hidden');
     comparePanel.classList.add('hidden');
     setMobNav('results');
+
+    // Update save button state
+    if (isSaved(query)) {
+        saveLocationBtn.classList.add('active');
+        saveLocationBtn.querySelector('svg').style.fill = 'currentColor';
+    } else {
+        saveLocationBtn.classList.remove('active');
+        saveLocationBtn.querySelector('svg').style.fill = 'none';
+    }
 
     initMap();
 }
@@ -242,12 +311,100 @@ function fetchResults(query) {
         currentData = data;
         renderResults(data);
         plotPins(data);
+        populateDrawer(data);
     })
     .catch(() => {
         resultSkeletons.style.display = 'none';
         speciesCards.classList.remove('hidden');
-        speciesCards.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:0.85rem;">Could not connect to backend. Make sure Flask is running.</div>`;
+        speciesCards.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:0.9rem;grid-column:1/-1;">Could not connect to backend. Make sure Flask is running.</div>`;
     });
+}
+
+// ══════════════════════════════════════
+// FILTER CHIPS
+// ══════════════════════════════════════
+
+function updateFilterChips() {
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.filter === currentFilter);
+    });
+}
+
+filterChips.addEventListener('click', e => {
+    if (!e.target.classList.contains('filter-chip')) return;
+    currentFilter = e.target.dataset.filter;
+    updateFilterChips();
+    applyFilter();
+});
+
+function applyFilter() {
+    if (currentFilter === 'all') {
+        filteredResults = [...allResults];
+    } else if (currentFilter === 'venomous') {
+        filteredResults = allResults.filter(item => 
+            VENOMOUS_TERMS.some(t => (item.common_name || item.species || '').toLowerCase().includes(t))
+        );
+    } else if (currentFilter === 'inat') {
+        filteredResults = allResults.filter(item => item.source === 'iNaturalist');
+    } else if (currentFilter === 'gbif') {
+        filteredResults = allResults.filter(item => item.source === 'GBIF');
+    } else if (currentFilter === 'photo') {
+        filteredResults = allResults.filter(item => item.photo_url);
+    }
+    
+    visibleCount = 0;
+    speciesCards.innerHTML = '';
+    const risk = currentData?.risk_score || {};
+    renderCards(filteredResults, risk);
+}
+
+// ══════════════════════════════════════
+// TRENDS TOGGLE
+// ══════════════════════════════════════
+
+toggleTrendsBtn.addEventListener('click', () => {
+    const isOpen = trendsContent.classList.toggle('hidden');
+    toggleTrendsBtn.classList.toggle('open', !isOpen);
+    if (!isOpen) {
+        // Generate simple trend visualization
+        generateTrendsChart();
+    }
+});
+
+function generateTrendsChart() {
+    const chartDiv = document.getElementById('trendsChart');
+    const sightings = currentData?.sightings || [];
+    const occurrences = currentData?.occurrences || [];
+    const total = sightings.length + occurrences.length;
+    
+    // Simple bar chart by year
+    const byYear = {};
+    [...sightings, ...occurrences].forEach(item => {
+        const year = item.date ? item.date.split('-')[0] : 'Unknown';
+        byYear[year] = (byYear[year] || 0) + 1;
+    });
+    
+    const years = Object.keys(byYear).sort().slice(-5);
+    const maxCount = Math.max(...Object.values(byYear), 1);
+    
+    let barsHTML = years.map(year => {
+        const count = byYear[year];
+        const height = (count / maxCount) * 100;
+        return `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;">
+                <div style="width:40px;background:var(--accent);border-radius:4px 4px 0 0;transition:height 0.5s ease;height:${height}px;min-height:4px;"></div>
+                <span style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">${year}</span>
+                <span style="font-size:0.65rem;font-weight:600;color:var(--text-secondary);">${count}</span>
+            </div>
+        `;
+    }).join('');
+    
+    chartDiv.innerHTML = `
+        <div style="display:flex;align-items:flex-end;gap:16px;height:160px;padding:20px;background:var(--surface);border-radius:12px;border:1px solid var(--border);">
+            ${barsHTML || '<p style="color:var(--text-muted);font-size:0.85rem;">No date data available</p>'}
+        </div>
+        <p style="margin-top:12px;font-size:0.78rem;color:var(--text-muted);text-align:center;">Sightings by year (last 5 years)</p>
+    `;
 }
 
 // ══════════════════════════════════════
@@ -260,6 +417,7 @@ function renderResults(data) {
     const occs      = data.occurrences || [];
     const location  = data.location    || {};
     allResults      = [...sightings, ...occs];
+    filteredResults = [...allResults];
 
     // Title
     const locName = location.display_name
@@ -282,13 +440,17 @@ function renderResults(data) {
     safetyRibbon.classList.remove('hidden');
     safetyText.textContent = SAFETY_TIPS[slug] || SAFETY_TIPS.unknown;
 
+    // Show filters and trends
+    filterChips.classList.remove('hidden');
+    trendsSection.classList.remove('hidden');
+
     // Hide skeletons, show cards
     resultSkeletons.style.display = 'none';
     speciesCards.classList.remove('hidden');
 
     // Render first batch
     visibleCount = 0;
-    renderCards(allResults, risk);
+    renderCards(filteredResults, risk);
 }
 
 function renderCards(results, risk) {
@@ -305,9 +467,9 @@ function renderCards(results, risk) {
         loadMoreWrap.classList.remove('hidden');
         showingCount.textContent = `Showing ${visibleCount} of ${results.length} results`;
     } else {
-        loadMoreWrap.classList.add('hidden');
         showingCount.textContent = `Showing all ${results.length} results`;
-        if (results.length > 0) loadMoreWrap.classList.remove('hidden');
+        if (results.length > CARDS_PER_PAGE) loadMoreWrap.classList.remove('hidden');
+        else loadMoreWrap.classList.add('hidden');
     }
 }
 
@@ -329,8 +491,8 @@ function buildCard(item, risk, riskSlug, index) {
         <div class="sp-card-inner">
             <div class="sp-img-wrap">
                 ${item.photo_url
-                    ? `<img class="sp-img" src="${item.photo_url}" alt="${item.common_name || ''}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'sp-img-placeholder\\'><svg width=\\'40\\' height=\\'40\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'1\\'><path d=\\'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z\\'></path></svg></div>'">`
-                    : `<div class="sp-img-placeholder"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg></div>`
+                    ? `<img class="sp-img" src="${item.photo_url}" alt="${item.common_name || ''}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'sp-img-placeholder\\'><svg width=\\'48\\' height=\\'48\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'1\\'><path d=\\'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z\\'></path></svg></div>'">`
+                    : `<div class="sp-img-placeholder"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg></div>`
                 }
                 <span class="sp-venom-badge ${isVenomous ? 'venomous' : 'safe'}">${isVenomous ? 'Venomous' : 'Non-Venomous'}</span>
             </div>
@@ -343,13 +505,14 @@ function buildCard(item, risk, riskSlug, index) {
                             ? `<span class="sp-scientific">${item.species}</span>` : ''}
                     </div>
                     <div class="sp-score ${cardSlug}">
-                        <span class="sp-score-num">${score}<span style="font-size:0.6em;font-weight:700;margin-left:2px;color:var(--text-muted)">USDRI</span></span>
-                        <span class="sp-score-risk">${risk.label || '—'} Risk</span>
+                        <span class="sp-score-num">${score}<span style="font-size:0.55em;font-weight:700;margin-left:3px;color:var(--text-muted)">USDRI</span></span>
+                        <span class="sp-score-label">Risk Score</span>
+                        <span class="sp-score-risk">${risk.label || '—'}</span>
                     </div>
                 </div>
 
                 <div class="sp-safety ${cardSlug}">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                     ${safetyTip}
                 </div>
 
@@ -372,24 +535,23 @@ function buildCard(item, risk, riskSlug, index) {
                     </div>
                     <div class="sp-meta-item">
                         <span class="sp-meta-label">Source</span>
-                        <span class="sp-meta-val" style="color:${sourceColor};font-weight:600;">${source}</span>
+                        <span class="sp-meta-val" style="color:${sourceColor};font-weight:700;">${source}</span>
                     </div>
                     ${item.observer ? `<div class="sp-meta-item"><span class="sp-meta-label">Observer</span><span class="sp-meta-val">${item.observer}</span></div>` : ''}
                 </div>
 
                 <div class="sp-actions">
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
                         <button class="sp-btn primary sp-expand-trigger">Expand Metrics</button>
                         ${item.url ? `<a href="${item.url}" target="_blank" class="sp-btn outline">View Record</a>` : ''}
                     </div>
                     <button class="sp-share-btn sp-share-trigger" title="Share">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Expand metrics panel -->
         <div class="sp-metrics">
             <span class="sp-metrics-title">USDRI Breakdown</span>
             ${risk.components ? Object.values(risk.components).map(c => {
@@ -401,15 +563,14 @@ function buildCard(item, risk, riskSlug, index) {
                     </div>
                     <div class="sp-sub-track"><div class="sp-sub-fill" style="width:${p}%"></div></div>
                 </div>`;
-            }).join('') : '<p style="font-size:0.78rem;color:var(--text-muted);">No breakdown available.</p>'}
+            }).join('') : '<p style="font-size:0.82rem;color:var(--text-muted);">No breakdown available.</p>'}
             ${item.latitude && item.longitude ? `
-            <div class="sp-sub-item" style="margin-top:4px;">
-                <span class="sp-sub-label" style="font-size:0.68rem;color:var(--text-muted);">Coordinates: ${Number(item.latitude).toFixed(4)}, ${Number(item.longitude).toFixed(4)}</span>
+            <div class="sp-sub-item" style="margin-top:6px;">
+                <span class="sp-sub-label" style="font-size:0.72rem;color:var(--text-muted);">Coordinates: ${Number(item.latitude).toFixed(4)}, ${Number(item.longitude).toFixed(4)}</span>
             </div>` : ''}
         </div>
     `;
 
-    // Expand metrics toggle
     const expandBtn  = card.querySelector('.sp-expand-trigger');
     const metricsEl  = card.querySelector('.sp-metrics');
     expandBtn.addEventListener('click', () => {
@@ -417,7 +578,6 @@ function buildCard(item, risk, riskSlug, index) {
         expandBtn.textContent = open ? 'Collapse' : 'Expand Metrics';
     });
 
-    // Click card to fly map
     card.addEventListener('click', e => {
         if (e.target.closest('.sp-btn') || e.target.closest('.sp-share-btn')) return;
         if (item.latitude && item.longitude && map) {
@@ -426,12 +586,11 @@ function buildCard(item, risk, riskSlug, index) {
         }
     });
 
-    // Share
     card.querySelector('.sp-share-trigger').addEventListener('click', e => {
         e.stopPropagation();
         const url = `${location.origin}${location.pathname}?loc=${encodeURIComponent(currentQuery)}`;
         if (navigator.share) { navigator.share({ title: `Boseman — ${item.common_name || item.species}`, url }); }
-        else { navigator.clipboard.writeText(url); }
+        else { navigator.clipboard.writeText(url); alert('Link copied to clipboard!'); }
     });
 
     return card;
@@ -440,8 +599,86 @@ function buildCard(item, risk, riskSlug, index) {
 loadMoreBtn.addEventListener('click', () => {
     if (!currentData) return;
     const risk = currentData.risk_score || {};
-    renderCards(allResults, risk);
+    renderCards(filteredResults, risk);
 });
+
+// ══════════════════════════════════════
+// RIGHT DRAWER (Species List)
+// ══════════════════════════════════════
+
+function populateDrawer(data) {
+    const sightings = data.sightings || [];
+    const occurrences = data.occurrences || [];
+    const all = [...sightings, ...occurrences];
+    
+    // Group by species
+    const bySpecies = {};
+    all.forEach(item => {
+        const name = item.common_name || item.species || 'Unknown';
+        if (!bySpecies[name]) {
+            bySpecies[name] = {
+                name: name,
+                scientific: item.species,
+                count: 0,
+                photo: item.photo_url,
+                venomous: VENOMOUS_TERMS.some(t => name.toLowerCase().includes(t))
+            };
+        }
+        bySpecies[name].count++;
+    });
+    
+    const speciesList = Object.values(bySpecies).sort((a, b) => b.count - a.count);
+    
+    if (speciesList.length === 0) {
+        drawerContent.innerHTML = '<p class="drawer-empty">No species found for this location.</p>';
+        return;
+    }
+    
+    drawerContent.innerHTML = `
+        <div class="drawer-species-list">
+            ${speciesList.map(s => `
+                <div class="drawer-species-item" data-name="${s.name}">
+                    ${s.photo ? `<img class="drawer-species-img" src="${s.photo}" alt="">` : `<div class="drawer-species-img" style="background:var(--border);"></div>`}
+                    <div class="drawer-species-info">
+                        <div class="drawer-species-name">${s.name} ${s.venomous ? '⚠️' : ''}</div>
+                        <div class="drawer-species-count">${s.count} sighting${s.count !== 1 ? 's' : ''}</div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    // Click to filter
+    drawerContent.querySelectorAll('.drawer-species-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const name = item.dataset.name;
+            // Filter cards to show only this species
+            const filtered = allResults.filter(r => (r.common_name || r.species) === name);
+            filteredResults = filtered;
+            visibleCount = 0;
+            speciesCards.innerHTML = '';
+            const risk = currentData?.risk_score || {};
+            renderCards(filteredResults, risk);
+            closeDrawer();
+            // Reset filter chips visually
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        });
+    });
+}
+
+function openDrawer() {
+    rightDrawer.classList.remove('hidden');
+    drawerOverlay.classList.remove('hidden');
+}
+
+function closeDrawer() {
+    rightDrawer.classList.add('hidden');
+    drawerOverlay.classList.add('hidden');
+}
+
+openDrawerBtn.addEventListener('click', openDrawer);
+closeDrawerBtn.addEventListener('click', closeDrawer);
+drawerOverlay.addEventListener('click', closeDrawer);
 
 // ══════════════════════════════════════
 // MAP
@@ -471,11 +708,11 @@ function plotPins(data) {
         const color = isVenomous ? '#b03000' : (item.source === 'iNaturalist' ? '#3d6b8e' : '#006d42');
         const icon = L.divIcon({
             className: '',
-            html: `<div style="width:10px;height:10px;background:${color};border:2px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.25);"></div>`,
-            iconSize: [10, 10], iconAnchor: [5, 5]
+            html: `<div style="width:12px;height:12px;background:${color};border:2px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.25);"></div>`,
+            iconSize: [12, 12], iconAnchor: [6, 6]
         });
         const marker = L.marker([item.latitude, item.longitude], { icon });
-        marker.bindPopup(`<div style="font-family:'DM Sans',sans-serif;font-size:13px;min-width:150px;line-height:1.6;"><strong>${item.common_name || item.species || 'Unknown'}</strong><br><span style="color:#888;font-size:11px;">📍 ${item.location || ''}</span><br><span style="color:#888;font-size:11px;">${item.date || ''}</span><br><span style="font-size:11px;color:${color};">${item.source}</span>${item.url ? ` <a href="${item.url}" target="_blank" style="color:${color};">View →</a>` : ''}</div>`);
+        marker.bindPopup(`<div style="font-family:'DM Sans',sans-serif;font-size:13px;min-width:150px;line-height:1.6;"><strong>${item.common_name || item.species || 'Unknown'}</strong><br><span style="color:#888;font-size:11px;">📍 ${item.location || ''}</span><br><span style="color:#888;font-size:11px;">${item.date || ''}</span><br><span style="font-size:11px;color:${color};font-weight:700;">${item.source}</span>${item.url ? ` <a href="${item.url}" target="_blank" style="color:${color};">View →</a>` : ''}</div>`);
         markersLayer.addLayer(marker);
         bounds.push([item.latitude, item.longitude]);
     });
@@ -485,6 +722,7 @@ function plotPins(data) {
 function showMapPanel() {
     mapPanel.classList.remove('hidden');
     comparePanel.classList.add('hidden');
+    rightDrawer.classList.add('hidden');
     setMobNav('map');
     setTimeout(() => { if (map) map.invalidateSize(); }, 200);
 }
@@ -493,12 +731,60 @@ showMapBtn.addEventListener('click', showMapPanel);
 closeMapBtn.addEventListener('click', () => { mapPanel.classList.add('hidden'); setMobNav('results'); });
 
 // ══════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════
+
+exportBtn.addEventListener('click', () => {
+    if (!currentData || !allResults.length) {
+        alert('No data to export. Please search first.');
+        return;
+    }
+    
+    const risk = currentData.risk_score || {};
+    const location = currentData.location || {};
+    
+    // Create CSV content
+    const headers = ['Species', 'Common Name', 'Location', 'Date', 'Source', 'Latitude', 'Longitude', 'Venomous'];
+    const rows = allResults.map(item => {
+        const isVenomous = VENOMOUS_TERMS.some(t => (item.common_name || item.species || '').toLowerCase().includes(t));
+        return [
+            `"${item.species || ''}"`,
+            `"${item.common_name || ''}"`,
+            `"${item.location || ''}"`,
+            `"${item.date || ''}"`,
+            `"${item.source || ''}"`,
+            item.latitude || '',
+            item.longitude || '',
+            isVenomous ? 'Yes' : 'No'
+        ].join(',');
+    });
+    
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `boseman-${currentQuery.replace(/[^a-z0-9]/gi, '_').toLowerCase()}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+});
+
+// ══════════════════════════════════════
+// SAVE LOCATION
+// ══════════════════════════════════════
+
+saveLocationBtn.addEventListener('click', toggleSaveLocation);
+
+// ══════════════════════════════════════
 // COMPARE
 // ══════════════════════════════════════
 
 function showComparePanel() {
     comparePanel.classList.remove('hidden');
     mapPanel.classList.add('hidden');
+    rightDrawer.classList.add('hidden');
     setMobNav('compare');
     compareInputA.value = currentQuery;
     compareResultA.innerHTML = '';
@@ -525,7 +811,7 @@ document.querySelectorAll('.compare-search-btn').forEach(btn => {
         const result = col === 'A' ? compareResultA : compareResultB;
         const query  = input.value.trim();
         if (!query) return;
-        result.innerHTML = `<div style="padding:12px;color:var(--text-muted);font-size:0.82rem;">Searching…</div>`;
+        result.innerHTML = `<div style="padding:16px;color:var(--text-muted);font-size:0.85rem;">Searching…</div>`;
         fetch(`${API_BASE_URL}/search`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -533,7 +819,7 @@ document.querySelectorAll('.compare-search-btn').forEach(btn => {
         })
         .then(r => r.json())
         .then(data => renderCompareResult(result, data))
-        .catch(() => { result.innerHTML = `<p style="font-size:0.82rem;color:var(--text-muted);">Could not load.</p>`; });
+        .catch(() => { result.innerHTML = `<p style="font-size:0.85rem;color:var(--text-muted);padding:16px;">Could not load.</p>`; });
     });
 });
 
@@ -544,7 +830,7 @@ function renderCompareResult(container, data) {
     const loc  = data.location || {};
     const name = loc.display_name ? loc.display_name.split(',').slice(0, 2).join(',').trim() : '—';
     container.innerHTML = `
-        <p style="font-size:0.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">${name}</p>
+        <p style="font-size:0.75rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;">${name}</p>
         <div class="compare-verdict ${slug}">
             <span class="compare-verdict-label ${slug}">${risk.label || 'Unknown'} — ${risk.score || '—'}/100</span>
             <span class="compare-verdict-text">${risk.interpretation || 'No data available.'}</span>
@@ -571,6 +857,7 @@ function setMobNav(active) {
 mobNavResults.addEventListener('click', () => {
     mapPanel.classList.add('hidden');
     comparePanel.classList.add('hidden');
+    rightDrawer.classList.add('hidden');
     setMobNav('results');
 });
 mobNavMap.addEventListener('click', showMapPanel);
@@ -578,9 +865,30 @@ mobNavCompare.addEventListener('click', showComparePanel);
 mobNavShare.addEventListener('click', () => {
     const url = `${location.origin}${location.pathname}?loc=${encodeURIComponent(currentQuery)}`;
     if (navigator.share) { navigator.share({ title: `Boseman — ${currentQuery}`, url }); }
-    else { navigator.clipboard.writeText(url).then(() => { mobNavShare.querySelector('span').textContent = 'Copied'; setTimeout(() => { mobNavShare.querySelector('span').textContent = 'Share'; }, 2000); }); }
+    else { navigator.clipboard.writeText(url).then(() => { alert('Link copied!'); }); }
     setMobNav('results');
 });
+
+// ══════════════════════════════════════
+// SCROLL TO TOP
+// ══════════════════════════════════════
+
+function initScrollTop() {
+    const resultBody = document.getElementById('resultBody');
+    if (!resultBody) return;
+    
+    resultBody.addEventListener('scroll', () => {
+        if (resultBody.scrollTop > 300) {
+            scrollTopBtn.classList.remove('hidden');
+        } else {
+            scrollTopBtn.classList.add('hidden');
+        }
+    });
+    
+    scrollTopBtn.addEventListener('click', () => {
+        resultBody.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+}
 
 // ══════════════════════════════════════
 // URL PARAM
@@ -592,4 +900,9 @@ function checkUrlParam() {
     if (loc) triggerSearch(loc);
 }
 
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+
+initScrollTop();
 checkUrlParam();

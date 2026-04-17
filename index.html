@@ -62,10 +62,24 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </button>
         </div>
-        <button id="showMapBtn" class="topbar-map-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
-            Map
-        </button>
+        <div class="topbar-actions">
+            <button id="exportBtn" class="topbar-action-btn" title="Export Results">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Export</span>
+            </button>
+            <button id="saveLocationBtn" class="topbar-action-btn" title="Save Location">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                <span>Save</span>
+            </button>
+            <button id="showMapBtn" class="topbar-map-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+                Map
+            </button>
+            <button id="openDrawerBtn" class="topbar-action-btn drawer-toggle" title="View Species List">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                <span>Species</span>
+            </button>
+        </div>
     </header>
 
     <!-- Results body -->
@@ -91,8 +105,31 @@
             <span id="safetyText"></span>
         </div>
 
+        <!-- Filter chips -->
+        <div id="filterChips" class="filter-chips hidden">
+            <button class="filter-chip active" data-filter="all">All</button>
+            <button class="filter-chip" data-filter="venomous">Venomous Only</button>
+            <button class="filter-chip" data-filter="inat">iNaturalist</button>
+            <button class="filter-chip" data-filter="gbif">GBIF</button>
+            <button class="filter-chip" data-filter="photo">Has Photo</button>
+        </div>
+
+        <!-- Trends section (collapsible) -->
+        <div id="trendsSection" class="trends-section hidden">
+            <button id="toggleTrendsBtn" class="trends-toggle">
+                <span>Sighting Trends</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="trendsContent" class="trends-content hidden">
+                <div id="trendsChart" class="trends-chart">
+                    <p class="trends-placeholder">Trend data will appear here based on historical sightings.</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Skeletons while loading -->
         <div id="resultSkeletons" class="result-skeletons">
+            <div class="skeleton-card"><div class="sk-img"></div><div class="sk-body"><div class="sk-line wide"></div><div class="sk-line medium"></div><div class="sk-line short"></div><div class="sk-bar"></div></div></div>
             <div class="skeleton-card"><div class="sk-img"></div><div class="sk-body"><div class="sk-line wide"></div><div class="sk-line medium"></div><div class="sk-line short"></div><div class="sk-bar"></div></div></div>
             <div class="skeleton-card"><div class="sk-img"></div><div class="sk-body"><div class="sk-line wide"></div><div class="sk-line medium"></div><div class="sk-line short"></div><div class="sk-bar"></div></div></div>
             <div class="skeleton-card"><div class="sk-img"></div><div class="sk-body"><div class="sk-line wide"></div><div class="sk-line medium"></div><div class="sk-line short"></div><div class="sk-bar"></div></div></div>
@@ -108,6 +145,20 @@
         </div>
 
     </main>
+
+    <!-- Right drawer (species list) -->
+    <div id="rightDrawer" class="right-drawer hidden">
+        <div class="drawer-header">
+            <span class="drawer-title">Species Found</span>
+            <button id="closeDrawerBtn" class="close-drawer-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div id="drawerContent" class="drawer-content">
+            <p class="drawer-empty">Search a location to see species list.</p>
+        </div>
+    </div>
+    <div id="drawerOverlay" class="drawer-overlay hidden"></div>
 
     <!-- Map panel -->
     <div id="mapPanel" class="map-panel hidden">
@@ -149,6 +200,12 @@
             </div>
         </div>
     </div>
+
+    <!-- Scroll to top button -->
+    <button id="scrollTopBtn" class="scroll-top-btn hidden" title="Scroll to top">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+        <span>Top</span>
+    </button>
 
     <!-- Mobile bottom nav -->
     <nav class="mobile-bottom-nav">
