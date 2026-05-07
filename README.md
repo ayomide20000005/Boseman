@@ -10,43 +10,19 @@ The core of Boseman is the Urban Snake Displacement Risk Index (USDRI) — an or
 The research behind USDRI is published and peer reviewed. You can read the full paper here: https://doi.org/10.5281/zenodo.19245787
 
 Data sources
-
 iNaturalist — live snake sighting observations
 GBIF — global biodiversity occurrence records
 Google Earth Engine — satellite-derived habitat loss
-
-
-
 Copernicus Urban Atlas — urban land cover and expansion data
-
-
-
 OpenStreetMap Nominatim — geocoding and location resolution
-
-
-
 Wikipedia — species information
 
 Tech stack
-
-
-
-
-
 Backend: Python, Flask, Flask-CORS, concurrent API calls
-
-
-
 Frontend: Vanilla HTML, CSS, JavaScript
-
-
-
 Maps: Leaflet.js
 
-
-
 Deployment: Vercel
-
 
 
 <img width="1596" height="695" alt="boseman1" src="https://github.com/user-attachments/assets/1b08e898-fea7-4ea4-bf25-6b918faa592b" />
