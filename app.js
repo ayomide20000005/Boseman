@@ -615,9 +615,6 @@ loadMoreBtn.addEventListener('click', () => {
     renderCards(filteredResults, risk);
 });
 
-// ══════════════════════════════════════
-// RIGHT DRAWER (Species List)
-// ══════════════════════════════════════
 
 function populateDrawer(data) {
     const sightings = data.sightings || [];
@@ -686,9 +683,6 @@ openDrawerBtn.addEventListener('click', openDrawer);
 closeDrawerBtn.addEventListener('click', closeDrawer);
 drawerOverlay.addEventListener('click', closeDrawer);
 
-// ══════════════════════════════════════
-// MAP
-// ══════════════════════════════════════
 
 function initMap() {
     if (map) { setTimeout(() => map.invalidateSize(), 100); return; }
@@ -736,9 +730,7 @@ function showMapPanel() {
 showMapBtn.addEventListener('click', showMapPanel);
 closeMapBtn.addEventListener('click', () => { mapPanel.classList.add('hidden'); setMobNav('results'); });
 
-// ══════════════════════════════════════
-// EXPORT
-// ══════════════════════════════════════
+
 
 exportBtn.addEventListener('click', () => {
     if (!currentData || !allResults.length) {
@@ -775,15 +767,11 @@ exportBtn.addEventListener('click', () => {
     URL.revokeObjectURL(url);
 });
 
-// ══════════════════════════════════════
-// SAVE LOCATION
-// ══════════════════════════════════════
+
 
 saveLocationBtn.addEventListener('click', toggleSaveLocation);
 
-// ══════════════════════════════════════
-// COMPARE
-// ══════════════════════════════════════
+
 
 function showComparePanel() {
     comparePanel.classList.remove('hidden');
@@ -847,9 +835,6 @@ function renderCompareResult(container, data) {
     `;
 }
 
-// ══════════════════════════════════════
-// MOBILE NAV
-// ══════════════════════════════════════
 
 function setMobNav(active) {
     [mobNavResults, mobNavMap, mobNavCompare, mobNavShare].forEach(b => b.classList.remove('active'));
@@ -873,9 +858,6 @@ mobNavShare.addEventListener('click', () => {
     setMobNav('results');
 });
 
-// ══════════════════════════════════════
-// SCROLL TO TOP
-// ══════════════════════════════════════
 
 function initScrollTop() {
     const resultBody = document.getElementById('resultBody');
@@ -889,9 +871,6 @@ function initScrollTop() {
     });
 }
 
-// ══════════════════════════════════════
-// URL PARAM
-// ══════════════════════════════════════
 
 function checkUrlParam() {
     const params = new URLSearchParams(window.location.search);
