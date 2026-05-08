@@ -1,75 +1,85 @@
 # apis/earth_engine.py
 
-import os
-import ee
-import json
-from dotenv import load_dotenv
+import requests
 
-load_dotenv()
+BASE_URL = "https://data-api.globalforestwatch.org"
 
-GEE_PROJECT  = os.getenv("GEE_PROJECT")
-GEE_KEY_JSON = os.getenv("GEE_KEY_JSON")
-KEY_FILE     = os.path.join(os.path.dirname(__file__), "eternal-galaxy-485500-g4-e4550197b72b.json")
+HEADERS = {
+    "User-Agent": "Boseman/1.0 (urban snake displacement search engine)",
+    "Content-Type": "application/json"
+}
 
 
-def _init_ee():
-    if GEE_KEY_JSON:
-        credentials = ee.ServiceAccountCredentials(
-            "boseman@eternal-galaxy-485500-g4.iam.gserviceaccount.com",
-            key_data=json.loads(GEE_KEY_JSON)
-        )
-    else:
-        credentials = ee.ServiceAccountCredentials(
-            "boseman@eternal-galaxy-485500-g4.iam.gserviceaccount.com",
-            KEY_FILE
-        )
-    ee.Initialize(credentials, project=GEE_PROJECT)
-
-
-def get_earth_engine_data_disabled(query: str, bbox: dict = None) -> dict | None:
+def get_earth_engine_data(query: str, bbox: dict = None) -> dict | None:
     try:
-        _init_ee()
+        if not bbox:
+            return None
 
-        hansen    = ee.Image("UMD/hansen/global_forest_change_2024_v1_12_v1_11")
-        loss      = hansen.select("loss")
-        treecover = hansen.select("treecover2000")
+        min_lng = bbox["min_lng"]
+        min_lat = bbox["min_lat"]
+        max_lng = bbox["max_lng"]
+        max_lat = bbox["max_lat"]
 
-        forest_loss_percent = 0.0
-
-        if bbox:
-            region = ee.Geometry.Rectangle([
-                bbox["min_lng"],
-                bbox["min_lat"],
-                bbox["max_lng"],
-                bbox["max_lat"]
-            ])
-
-            total_forest = treecover.gt(0).reduceRegion(
-                reducer=ee.Reducer.sum(),
-                geometry=region,
-                scale=30,
-                maxPixels=1e9
-            ).getInfo().get("treecover2000", 0)
-
-            total_loss = loss.reduceRegion(
-                reducer=ee.Reducer.sum(),
-                geometry=region,
-                scale=30,
-                maxPixels=1e9
-            ).getInfo().get("loss", 0)
-
-            if total_forest and total_forest > 0:
-                forest_loss_percent = round((total_loss / total_forest) * 100, 2)
-
-        return {
-            "description":         "GEE Hansen forest change data",
-            "forest_loss_percent": forest_loss_percent,
-            "tile_url":            None
+        # Global Forest Watch — tree cover loss API
+        # Uses Hansen/UMD dataset, same source GEE was using
+        payload = {
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[
+                    [min_lng, min_lat],
+                    [max_lng, min_lat],
+                    [max_lng, max_lat],
+                    [min_lng, max_lat],
+                    [min_lng, min_lat],
+                ]]
+            }
         }
 
-    except Exception as e:
-        print(f"GEE Error: {e}")
-        return None
+        response = requests.post(
+            f"{BASE_URL}/dataset/umd_tree_cover_loss/latest/query/json",
+            headers=HEADERS,
+            json=payload,
+            timeout=20
+        )
+        response.raise_for_status()
+        data = response.json()
 
-def get_earth_engine_data(query, bbox=None):
-    return None
+        rows = data.get("data", [])
+
+        if not rows:
+            return {
+                "source":              "GlobalForestWatch",
+                "description":         "Hansen/UMD tree cover loss data",
+                "forest_loss_percent": 0.0,
+                "total_loss_ha":       0.0,
+                "total_cover_ha":      0.0,
+            }
+
+        # Sum up tree cover loss across all years returned
+        total_loss_ha  = sum(row.get("umd_tree_cover_loss__ha", 0) or 0 for row in rows)
+        total_cover_ha = sum(row.get("umd_tree_cover_extent_2000__ha", 0) or 0 for row in rows)
+
+        if total_cover_ha > 0:
+            forest_loss_percent = round((total_loss_ha / total_cover_ha) * 100, 2)
+        else:
+            forest_loss_percent = 0.0
+
+        # Cap at 100 just in case
+        forest_loss_percent = min(forest_loss_percent, 100.0)
+
+        return {
+            "source":              "GlobalForestWatch",
+            "description":         "Hansen/UMD tree cover loss data",
+            "forest_loss_percent": forest_loss_percent,
+            "total_loss_ha":       round(total_loss_ha, 2),
+            "total_cover_ha":      round(total_cover_ha, 2),
+        }
+
+    except requests.exceptions.Timeout:
+        raise Exception("Global Forest Watch request timed out")
+    except requests.exceptions.ConnectionError:
+        raise Exception("Could not connect to Global Forest Watch API")
+    except requests.exceptions.HTTPError as e:
+        raise Exception(f"Global Forest Watch HTTP error: {str(e)}")
+    except Exception as e:
+        raise Exception(f"Global Forest Watch error: {str(e)}")
