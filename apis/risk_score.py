@@ -36,12 +36,25 @@ def _habitat_loss_score(earth_engine: dict) -> float:
 def _urban_expansion_score(copernicus: dict) -> float:
     if not copernicus:
         return 0.0
-    # Read urban_percent directly from OSM Overpass response
     urban_percent = copernicus.get("urban_percent") or 0.0
     return round(25 * min(float(urban_percent), 100) / 100, 2)
 
 
+def _proximity_score_for_point(lat: float, lng: float, city_lat: float, city_lng: float) -> float:
+    """Compute proximity score for a single point against the city centre."""
+    R    = 6371
+    dlat = math.radians(lat - city_lat)
+    dlng = math.radians(lng - city_lng)
+    a    = (math.sin(dlat / 2) ** 2 +
+            math.cos(math.radians(city_lat)) *
+            math.cos(math.radians(lat)) *
+            math.sin(dlng / 2) ** 2)
+    dist = R * 2 * math.asin(math.sqrt(a))
+    return round(max(0, 25 * math.exp(-dist / 20)), 2)
+
+
 def _proximity_score(sightings: list, occurrences: list, location: dict) -> float:
+    """Compute proximity score using centroid of all sightings — used for overall score."""
     if not location:
         return 0.0
     all_results = sightings + occurrences
@@ -57,12 +70,7 @@ def _proximity_score(sightings: list, occurrences: list, location: dict) -> floa
         return 0.0
     centroid_lat = sum(lats) / len(lats)
     centroid_lng = sum(lngs) / len(lngs)
-    R    = 6371
-    dlat = math.radians(centroid_lat - city_lat)
-    dlng = math.radians(centroid_lng - city_lng)
-    a    = math.sin(dlat/2)**2 + math.cos(math.radians(city_lat)) * math.cos(math.radians(centroid_lat)) * math.sin(dlng/2)**2
-    dist = R * 2 * math.asin(math.sqrt(a))
-    return round(max(0, 25 * math.exp(-dist / 20)), 2)
+    return _proximity_score_for_point(centroid_lat, centroid_lng, city_lat, city_lng)
 
 
 def compute_risk_score(
@@ -102,4 +110,11 @@ def compute_risk_score(
             "urban":     {"score": urban_score,     "label": "Urban Expansion",    "max": 25},
             "proximity": {"score": proximity_score, "label": "Urban Proximity",    "max": 25},
         },
+        "base_components": {
+            "density": density_score,
+            "habitat": habitat_score,
+            "urban":   urban_score,
+        },
+        "city_lat": location.get("latitude")  if location else None,
+        "city_lng": location.get("longitude") if location else None,
     }
