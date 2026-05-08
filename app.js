@@ -1,4 +1,3 @@
-
 const API_BASE_URL = 'https://boseman-backend.onrender.com';
 const RECENT_KEY    = 'boseman_recent';
 const SAVED_KEY     = 'boseman_saved';
@@ -253,12 +252,10 @@ function showResultPage(query) {
     currentFilter = 'all';
     updateFilterChips();
 
-    // Reset panels
     mapPanel.classList.add('hidden');
     comparePanel.classList.add('hidden');
     setMobNav('results');
 
-    // Update save button state
     if (isSaved(query)) {
         saveLocationBtn.classList.add('active');
         saveLocationBtn.querySelector('svg').style.fill = 'currentColor';
@@ -293,9 +290,9 @@ function fetchResults(query) {
         plotPins(data);
         populateDrawer(data);
     })
-   .catch(() => {
-    resultSkeletons.style.display = 'none';
-});
+    .catch(() => {
+        resultSkeletons.style.display = 'none';
+    });
 }
 
 function updateFilterChips() {
@@ -339,19 +336,14 @@ function applyFilter() {
 toggleTrendsBtn.addEventListener('click', () => {
     const isOpen = trendsContent.classList.toggle('hidden');
     toggleTrendsBtn.classList.toggle('open', !isOpen);
-    if (!isOpen) {
-        // Generate simple trend visualization
-        generateTrendsChart();
-    }
+    if (!isOpen) generateTrendsChart();
 });
 
 function generateTrendsChart() {
     const chartDiv = document.getElementById('trendsChart');
     const sightings = currentData?.sightings || [];
     const occurrences = currentData?.occurrences || [];
-    const total = sightings.length + occurrences.length;
     
-    // Simple bar chart by year
     const byYear = {};
     [...sightings, ...occurrences].forEach(item => {
         const year = item.date ? item.date.split('-')[0] : 'Unknown';
@@ -382,6 +374,44 @@ function generateTrendsChart() {
 }
 
 // ══════════════════════════════════════
+// PER-CARD SCORE CALCULATION
+// ══════════════════════════════════════
+
+function computeCardScore(item, risk) {
+    const base = risk.base_components || {};
+    const cityLat = risk.city_lat;
+    const cityLng = risk.city_lng;
+
+    const density = base.density || 0;
+    const habitat = base.habitat || 0;
+    const urban   = base.urban   || 0;
+
+    // Compute proximity for this specific sighting
+    let proximity = 0;
+    if (item.latitude && item.longitude && cityLat && cityLng) {
+        const R    = 6371;
+        const dlat = (item.latitude  - cityLat) * Math.PI / 180;
+        const dlng = (item.longitude - cityLng) * Math.PI / 180;
+        const a    = Math.sin(dlat/2) * Math.sin(dlat/2) +
+                     Math.cos(cityLat * Math.PI / 180) *
+                     Math.cos(item.latitude * Math.PI / 180) *
+                     Math.sin(dlng/2) * Math.sin(dlng/2);
+        const dist = R * 2 * Math.asin(Math.sqrt(a));
+        proximity  = Math.max(0, 25 * Math.exp(-dist / 20));
+    }
+
+    const total = Math.min(Math.round((density + habitat + urban + proximity) * 10) / 10, 100);
+
+    // Get band
+    let label = 'Low';    let color = '#00b874';
+    if (total > 75)      { label = 'Critical'; color = '#cc0000'; }
+    else if (total > 50) { label = 'High';     color = '#f06000'; }
+    else if (total > 25) { label = 'Moderate'; color = '#f0a500'; }
+
+    return { score: total, label, color, slug: label.toLowerCase() };
+}
+
+// ══════════════════════════════════════
 // RENDER RESULTS
 // ══════════════════════════════════════
 
@@ -393,14 +423,12 @@ function renderResults(data) {
     allResults      = [...sightings, ...occs];
     filteredResults = [...allResults];
 
-    // Title
     const locName = location.display_name
         ? location.display_name.split(',').slice(0, 2).join(',').trim()
         : currentQuery;
     resultTitle.textContent = `Results for ${locName}`;
     resultSubtitle.textContent = `${allResults.length} record${allResults.length !== 1 ? 's' : ''} found`;
 
-    // Risk badge
     const slug = (risk.label || 'unknown').toLowerCase();
     if (risk.score) {
         riskBadge.className = `risk-badge ${slug}`;
@@ -409,34 +437,28 @@ function renderResults(data) {
         riskBadgeLevel.textContent = risk.label || '—';
     }
 
-    // Safety ribbon
     safetyRibbon.className = `safety-ribbon ${slug}`;
     safetyRibbon.classList.remove('hidden');
     safetyText.textContent = SAFETY_TIPS[slug] || SAFETY_TIPS.unknown;
 
-    // Show filters and trends
     filterChips.classList.remove('hidden');
     trendsSection.classList.remove('hidden');
 
-    // Hide skeletons, show cards
     resultSkeletons.style.display = 'none';
     speciesCards.classList.remove('hidden');
 
-    // Render first batch
     visibleCount = 0;
     renderCards(filteredResults, risk);
 }
 
 function renderCards(results, risk) {
-    const slug = (risk.label || 'unknown').toLowerCase();
     const batch = results.slice(visibleCount, visibleCount + CARDS_PER_PAGE);
     batch.forEach((item, i) => {
-        const card = buildCard(item, risk, slug, visibleCount + i);
+        const card = buildCard(item, risk, visibleCount + i);
         speciesCards.appendChild(card);
     });
     visibleCount += batch.length;
 
-    // Load more
     if (visibleCount < results.length) {
         loadMoreWrap.classList.remove('hidden');
         showingCount.textContent = `Showing ${visibleCount} of ${results.length} results`;
@@ -447,15 +469,51 @@ function renderCards(results, risk) {
     }
 }
 
-function buildCard(item, risk, riskSlug, index) {
-    const isVenomous = VENOMOUS_TERMS.some(t => (item.common_name || item.species || '').toLowerCase().includes(t));
-    const cardSlug   = riskSlug;
-    const score      = risk.score || 0;
-    const pct        = score;
-    const source     = item.source === 'iNaturalist' ? 'iNat' : 'GBIF';
-    const sourceColor = item.source === 'iNaturalist' ? '#3d6b8e' : '#006d42';
+function buildCard(item, risk, index) {
+    // Compute this card's own score based on its specific coordinates
+    const cardRisk   = computeCardScore(item, risk);
+    const score      = cardRisk.score;
+    const cardSlug   = cardRisk.slug;
+    const riskLabel  = cardRisk.label;
 
-    const safetyTip = SAFETY_TIPS[cardSlug] || SAFETY_TIPS.unknown;
+    const isVenomous  = VENOMOUS_TERMS.some(t => (item.common_name || item.species || '').toLowerCase().includes(t));
+    const source      = item.source === 'iNaturalist' ? 'iNat' : 'GBIF';
+    const sourceColor = item.source === 'iNaturalist' ? '#3d6b8e' : '#006d42';
+    const safetyTip   = SAFETY_TIPS[cardSlug] || SAFETY_TIPS.unknown;
+
+    // Build per-card components for breakdown
+    const base      = risk.base_components || {};
+    const cityLat   = risk.city_lat;
+    const cityLng   = risk.city_lng;
+    let proximity   = 0;
+    if (item.latitude && item.longitude && cityLat && cityLng) {
+        const R    = 6371;
+        const dlat = (item.latitude  - cityLat) * Math.PI / 180;
+        const dlng = (item.longitude - cityLng) * Math.PI / 180;
+        const a    = Math.sin(dlat/2) * Math.sin(dlat/2) +
+                     Math.cos(cityLat * Math.PI / 180) *
+                     Math.cos(item.latitude * Math.PI / 180) *
+                     Math.sin(dlng/2) * Math.sin(dlng/2);
+        const dist = R * 2 * Math.asin(Math.sqrt(a));
+        proximity  = Math.round(Math.max(0, 25 * Math.exp(-dist / 20)) * 100) / 100;
+    }
+
+    const cardComponents = [
+        { label: 'Sighting Density', score: base.density || 0, max: 25 },
+        { label: 'Habitat Loss',     score: base.habitat || 0, max: 25 },
+        { label: 'Urban Expansion',  score: base.urban   || 0, max: 25 },
+        { label: 'Urban Proximity',  score: proximity,          max: 25 },
+    ];
+
+    // Per-card interpretation
+    const city = currentData?.location?.city || currentData?.location?.display_name || 'this area';
+    const interpretations = {
+        low:      `Low displacement pressure near ${item.location || city}. Sighting appears within natural range.`,
+        moderate: `Moderate displacement signals near ${item.location || city}. Some urban pressure detected.`,
+        high:     `High displacement risk near ${item.location || city}. Significant urban pressure detected.`,
+        critical: `Critical displacement risk near ${item.location || city}. Active displacement likely.`,
+    };
+    const interpretation = interpretations[cardSlug] || `Displacement risk assessed near ${item.location || city}.`;
 
     const card = document.createElement('div');
     card.className = 'sp-card';
@@ -481,7 +539,7 @@ function buildCard(item, risk, riskSlug, index) {
                     <div class="sp-score ${cardSlug}">
                         <span class="sp-score-num">${score}<span style="font-size:0.55em;font-weight:700;margin-left:3px;color:var(--text-muted)">USDRI</span></span>
                         <span class="sp-score-label">Risk Score</span>
-                        <span class="sp-score-risk">${risk.label || '—'}</span>
+                        <span class="sp-score-risk">${riskLabel}</span>
                     </div>
                 </div>
 
@@ -492,11 +550,11 @@ function buildCard(item, risk, riskSlug, index) {
 
                 <div class="sp-bar-wrap">
                     <div class="sp-bar-track">
-                        <div class="sp-bar-fill ${cardSlug}" style="width:${pct}%"></div>
+                        <div class="sp-bar-fill ${cardSlug}" style="width:${score}%"></div>
                     </div>
                 </div>
 
-                <p class="sp-desc">${risk.interpretation || 'Displacement data recorded for this location.'}</p>
+                <p class="sp-desc">${interpretation}</p>
 
                 <div class="sp-meta">
                     <div class="sp-meta-item">
@@ -528,7 +586,7 @@ function buildCard(item, risk, riskSlug, index) {
 
         <div class="sp-metrics">
             <span class="sp-metrics-title">USDRI Breakdown</span>
-            ${risk.components ? Object.values(risk.components).map(c => {
+            ${cardComponents.map(c => {
                 const p = Math.round((c.score / c.max) * 100);
                 return `<div class="sp-sub-item">
                     <div class="sp-sub-header">
@@ -537,7 +595,7 @@ function buildCard(item, risk, riskSlug, index) {
                     </div>
                     <div class="sp-sub-track"><div class="sp-sub-fill" style="width:${p}%"></div></div>
                 </div>`;
-            }).join('') : '<p style="font-size:0.82rem;color:var(--text-muted);">No breakdown available.</p>'}
+            }).join('')}
             ${item.latitude && item.longitude ? `
             <div class="sp-sub-item" style="margin-top:6px;">
                 <span class="sp-sub-label" style="font-size:0.72rem;color:var(--text-muted);">Coordinates: ${Number(item.latitude).toFixed(4)}, ${Number(item.longitude).toFixed(4)}</span>
@@ -545,8 +603,8 @@ function buildCard(item, risk, riskSlug, index) {
         </div>
     `;
 
-    const expandBtn  = card.querySelector('.sp-expand-trigger');
-    const metricsEl  = card.querySelector('.sp-metrics');
+    const expandBtn = card.querySelector('.sp-expand-trigger');
+    const metricsEl = card.querySelector('.sp-metrics');
     expandBtn.addEventListener('click', () => {
         const open = metricsEl.classList.toggle('open');
         expandBtn.textContent = open ? 'Collapse' : 'Expand Metrics';
@@ -585,15 +643,12 @@ function populateDrawer(data) {
     const occurrences = data.occurrences || [];
     const all = [...sightings, ...occurrences];
     
-    // Group by species
     const bySpecies = {};
     all.forEach(item => {
         const name = item.common_name || item.species || 'Unknown';
         if (!bySpecies[name]) {
             bySpecies[name] = {
-                name: name,
-                scientific: item.species,
-                count: 0,
+                name, scientific: item.species, count: 0,
                 photo: item.photo_url,
                 venomous: VENOMOUS_TERMS.some(t => name.toLowerCase().includes(t))
             };
@@ -603,7 +658,7 @@ function populateDrawer(data) {
     
     const speciesList = Object.values(bySpecies).sort((a, b) => b.count - a.count);
     
-    if (speciesList.length === 0) {
+    if (!speciesList.length) {
         drawerContent.innerHTML = '<p class="drawer-empty">No species found for this location.</p>';
         return;
     }
@@ -622,19 +677,15 @@ function populateDrawer(data) {
         </div>
     `;
     
-    // Click to filter
     drawerContent.querySelectorAll('.drawer-species-item').forEach(item => {
         item.addEventListener('click', () => {
             const name = item.dataset.name;
-            // Filter cards to show only this species
-            const filtered = allResults.filter(r => (r.common_name || r.species) === name);
-            filteredResults = filtered;
+            filteredResults = allResults.filter(r => (r.common_name || r.species) === name);
             visibleCount = 0;
             speciesCards.innerHTML = '';
             const risk = currentData?.risk_score || {};
             renderCards(filteredResults, risk);
             closeDrawer();
-            // Reset filter chips visually
             document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
         });
     });
@@ -713,31 +764,29 @@ exportBtn.addEventListener('click', () => {
         alert('No data to export. Please search first.');
         return;
     }
-    
-    const risk = currentData.risk_score || {};
-    const location = currentData.location || {};
-    
-    // Create CSV content
-    const headers = ['Species', 'Common Name', 'Location', 'Date', 'Source', 'Latitude', 'Longitude', 'Venomous'];
-    const rows = allResults.map(item => {
+    const risk     = currentData.risk_score || {};
+    const location = currentData.location   || {};
+    const headers  = ['Species', 'Common Name', 'Location', 'Date', 'Source', 'Latitude', 'Longitude', 'Venomous', 'USDRI Score'];
+    const rows     = allResults.map(item => {
         const isVenomous = VENOMOUS_TERMS.some(t => (item.common_name || item.species || '').toLowerCase().includes(t));
+        const cardRisk   = computeCardScore(item, risk);
         return [
-            `"${item.species || ''}"`,
+            `"${item.species    || ''}"`,
             `"${item.common_name || ''}"`,
-            `"${item.location || ''}"`,
-            `"${item.date || ''}"`,
-            `"${item.source || ''}"`,
-            item.latitude || '',
+            `"${item.location   || ''}"`,
+            `"${item.date       || ''}"`,
+            `"${item.source     || ''}"`,
+            item.latitude  || '',
             item.longitude || '',
-            isVenomous ? 'Yes' : 'No'
+            isVenomous ? 'Yes' : 'No',
+            cardRisk.score
         ].join(',');
     });
-    
-    const csv = [headers.join(','), ...rows].join('\n');
+    const csv  = [headers.join(','), ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
     a.download = `boseman-${currentQuery.replace(/[^a-z0-9]/gi, '_').toLowerCase()}-${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(a);
     a.click();
@@ -850,15 +899,10 @@ mobNavShare.addEventListener('click', () => {
 function initScrollTop() {
     const resultBody = document.getElementById('resultBody');
     if (!resultBody) return;
-    
     resultBody.addEventListener('scroll', () => {
-        if (resultBody.scrollTop > 300) {
-            scrollTopBtn.classList.remove('hidden');
-        } else {
-            scrollTopBtn.classList.add('hidden');
-        }
+        if (resultBody.scrollTop > 300) scrollTopBtn.classList.remove('hidden');
+        else scrollTopBtn.classList.add('hidden');
     });
-    
     scrollTopBtn.addEventListener('click', () => {
         resultBody.scrollTo({ top: 0, behavior: 'smooth' });
     });
