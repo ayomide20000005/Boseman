@@ -267,9 +267,6 @@ backBtn.addEventListener('click', () => {
     searchInput.value = currentQuery;
 });
 
-// ══════════════════════════════════════
-// FETCH
-// ══════════════════════════════════════
 
 function fetchResults(query) {
     fetch(`${API_BASE_URL}/search`, {
@@ -323,9 +320,6 @@ function applyFilter() {
     renderCards(filteredResults, risk);
 }
 
-// ══════════════════════════════════════
-// TRENDS TOGGLE
-// ══════════════════════════════════════
 
 toggleTrendsBtn.addEventListener('click', () => {
     const isOpen = trendsContent.classList.toggle('hidden');
@@ -367,9 +361,6 @@ function generateTrendsChart() {
     `;
 }
 
-// ══════════════════════════════════════
-// PER-CARD SCORE CALCULATION
-// ══════════════════════════════════════
 
 function computeCardScore(item, risk) {
     const base = risk.base_components || {};
@@ -404,10 +395,6 @@ function computeCardScore(item, risk) {
 
     return { score: total, label, color, slug: label.toLowerCase() };
 }
-
-// ══════════════════════════════════════
-// RENDER RESULTS
-// ══════════════════════════════════════
 
 function renderResults(data) {
     const risk      = data.risk_score  || {};
