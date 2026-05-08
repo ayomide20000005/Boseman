@@ -918,9 +918,6 @@ function checkUrlParam() {
     if (loc) triggerSearch(loc);
 }
 
-// ══════════════════════════════════════
-// INIT
-// ══════════════════════════════════════
 
 initScrollTop();
 checkUrlParam();
