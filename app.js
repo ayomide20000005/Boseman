@@ -87,9 +87,6 @@ let visibleCount    = 0;
 let currentFilter   = 'all';
 let autocompleteTimer = null;
 
-// ══════════════════════════════════════
-// RECENT SEARCHES
-// ══════════════════════════════════════
 
 function getRecent() {
     try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; }
@@ -113,9 +110,6 @@ function clearAllRecent() {
     renderDropdown(searchInput.value.trim());
 }
 
-// ══════════════════════════════════════
-// SAVED LOCATIONS
-// ══════════════════════════════════════
 
 function getSaved() {
     try { return JSON.parse(localStorage.getItem(SAVED_KEY)) || []; }
