@@ -1,5 +1,3 @@
-# apis/risk_score.py
-
 import math
 
 RISK_BANDS = [
@@ -21,18 +19,8 @@ def _density_score(sightings: list, occurrences: list, location: dict) -> float:
     total = len(sightings) + len(occurrences)
     if total == 0:
         return 0.0
-    if location and location.get("boundingbox"):
-        try:
-            bb       = location["boundingbox"]
-            lat_span = abs(float(bb[1]) - float(bb[0]))
-            lng_span = abs(float(bb[3]) - float(bb[2]))
-            area_km2 = max(lat_span * lng_span * 111 * 111, 1)
-            density  = total / area_km2
-            score    = min(density * 25, 25)
-        except Exception:
-            score = min(total / 10 * 25, 25)
-    else:
-        score = min(total / 50 * 25, 25)
+    # Logarithmic scale — 1 sighting = ~3, 10 = ~14, 30 = ~19, 50+ = 25
+    score = min(25 * (math.log(total + 1) / math.log(52)), 25)
     return round(score, 2)
 
 
@@ -46,8 +34,14 @@ def _habitat_loss_score(earth_engine: dict) -> float:
 def _urban_expansion_score(copernicus: dict) -> float:
     if not copernicus:
         return 0.0
+    # Try direct percentage fields first
+    for key in ("urban_percent", "urbanPercent", "built_up_percent", "impervious_percent"):
+        val = copernicus.get(key)
+        if val:
+            return round(25 * min(float(val), 100) / 100, 2)
+    # Fallback: feature count with generous scale — 1 feature = 5 points
     count = len(copernicus.get("features", []))
-    return round(min(count / 10 * 25, 25), 2)
+    return round(min(count / 5 * 25, 25), 2)
 
 
 def _proximity_score(sightings: list, occurrences: list, location: dict) -> float:
@@ -71,7 +65,8 @@ def _proximity_score(sightings: list, occurrences: list, location: dict) -> floa
     dlng = math.radians(centroid_lng - city_lng)
     a    = math.sin(dlat/2)**2 + math.cos(math.radians(city_lat)) * math.cos(math.radians(centroid_lat)) * math.sin(dlng/2)**2
     dist = R * 2 * math.asin(math.sqrt(a))
-    return round(max(0, 25 * math.exp(-dist / 40)), 2)
+    # Steeper decay — full score within ~5km, drops quickly after
+    return round(max(0, 25 * math.exp(-dist / 20)), 2)
 
 
 def compute_risk_score(
