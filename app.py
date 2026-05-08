@@ -75,7 +75,7 @@ def search():
         if call_all or 'habitat' in filters:
             futures['earth_engine'] = executor.submit(get_earth_engine_data, query, bbox)
         if call_all or 'urban' in filters:
-            futures['copernicus']   = executor.submit(get_copernicus_data, query)
+            futures['copernicus']   = executor.submit(get_copernicus_data, query, bbox)
 
         if 'inaturalist' in futures:
             try:

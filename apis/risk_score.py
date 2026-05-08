@@ -1,3 +1,5 @@
+# apis/risk_score.py
+
 import math
 
 RISK_BANDS = [
@@ -34,14 +36,9 @@ def _habitat_loss_score(earth_engine: dict) -> float:
 def _urban_expansion_score(copernicus: dict) -> float:
     if not copernicus:
         return 0.0
-    # Try direct percentage fields first
-    for key in ("urban_percent", "urbanPercent", "built_up_percent", "impervious_percent"):
-        val = copernicus.get(key)
-        if val:
-            return round(25 * min(float(val), 100) / 100, 2)
-    # Fallback: feature count with generous scale — 1 feature = 5 points
-    count = len(copernicus.get("features", []))
-    return round(min(count / 5 * 25, 25), 2)
+    # Read urban_percent directly from OSM Overpass response
+    urban_percent = copernicus.get("urban_percent") or 0.0
+    return round(25 * min(float(urban_percent), 100) / 100, 2)
 
 
 def _proximity_score(sightings: list, occurrences: list, location: dict) -> float:
@@ -65,7 +62,6 @@ def _proximity_score(sightings: list, occurrences: list, location: dict) -> floa
     dlng = math.radians(centroid_lng - city_lng)
     a    = math.sin(dlat/2)**2 + math.cos(math.radians(city_lat)) * math.cos(math.radians(centroid_lat)) * math.sin(dlng/2)**2
     dist = R * 2 * math.asin(math.sqrt(a))
-    # Steeper decay — full score within ~5km, drops quickly after
     return round(max(0, 25 * math.exp(-dist / 20)), 2)
 
 
