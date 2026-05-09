@@ -1,7 +1,6 @@
-# backend/apis/nominatim.py
+# apis/nominatim.py
 
 import requests
-from difflib import SequenceMatcher
 
 BASE_URL = "https://nominatim.openstreetmap.org"
 
@@ -21,61 +20,23 @@ SNAKE_TERMS = [
 ]
 
 
-def _parse_query(query: str) -> str | None:
-    """
-    Strip snake terms to extract location. Returns None if nothing left.
-    """
+def _strip_snake_terms(query: str) -> str:
+    """Strip snake terms to extract just the location portion."""
     cleaned = query.lower()
-    for term in SNAKE_TERMS:
-        cleaned = cleaned.replace(term.lower(), "").strip()
-    cleaned = " ".join(cleaned.split())
-    return cleaned if cleaned else None
-
-
-def search_nominatim(query: str) -> dict | None:
-    try:
-        location = _parse_query(query)
-
-        # If nothing left after stripping snake terms
-        # the query is species-only — no location to geocode
-        if not location:
-            return None
-
-        candidates = _fetch_candidates(location)
-        best = _pick_best(candidates, location)
-
-        if not best:
-            words = location.split()
-            for word in reversed(words):
-                if len(word) > 2:
-                    candidates = _fetch_candidates(word)
-                    best = _pick_best(candidates, word)
-                    if best:
-                        break
-
-        return best
-
-    except requests.exceptions.Timeout:
-        raise Exception("Nominatim request timed out")
-    except requests.exceptions.ConnectionError:
-        raise Exception("Could not connect to Nominatim API")
-    except requests.exceptions.HTTPError as e:
-        raise Exception(f"Nominatim HTTP error: {str(e)}")
-    except Exception as e:
-        raise Exception(f"Nominatim error: {str(e)}")
+    for term in sorted(SNAKE_TERMS, key=len, reverse=True):
+        cleaned = cleaned.replace(term.lower(), " ")
+    return " ".join(cleaned.split()).strip()
 
 
 def _fetch_candidates(query: str) -> list:
     if not query or len(query.strip()) < 2:
         return []
-
     params = {
         "q":              query,
         "format":         "json",
         "limit":          10,
         "addressdetails": 1,
     }
-
     response = requests.get(
         f"{BASE_URL}/search",
         headers=HEADERS,
@@ -86,11 +47,14 @@ def _fetch_candidates(query: str) -> list:
     return response.json()
 
 
-def _pick_best(candidates: list, query: str) -> dict | None:
-    if not candidates:
-        return None
-
+def _score_candidate(place: dict) -> float:
+    """
+    Score a Nominatim candidate by type and importance.
+    Higher = better match.
+    """
     type_priority = {
+        "country":        12,
+        "state":          11,
         "city":           10,
         "town":            9,
         "municipality":    8,
@@ -98,44 +62,33 @@ def _pick_best(candidates: list, query: str) -> dict | None:
         "village":         6,
         "suburb":          5,
         "county":          4,
-        "state":           3,
-        "country":         2,
         "water":           1,
         "other":           0,
     }
 
-    scored = []
-    for place in candidates:
-        place_type  = place.get("type", "other")
-        place_class = place.get("class", "other")
-        address     = place.get("address", {})
-        importance  = float(place.get("importance", 0))
+    place_type  = place.get("type", "other")
+    place_class = place.get("class", "other")
+    importance  = float(place.get("importance", 0))
 
-        city    = address.get("city") or address.get("town") or address.get("village") or ""
-        country = address.get("country", "")
-        name    = city or place.get("display_name", "").split(",")[0].strip()
+    type_score = type_priority.get(place_type, 0)
+    if place_class == "boundary" and place_type in ("administrative", "country", "state"):
+        type_score += 3
+    if place_class == "place":
+        type_score += 2
 
-        similarity = SequenceMatcher(None, query.lower(), name.lower()).ratio()
+    return type_score + (importance * 3)
 
-        if similarity < 0.6:
-            continue
 
-        type_score  = type_priority.get(place_type, 0)
-        if place_class == "place":
-            type_score += 2
+def _normalize(place: dict) -> dict:
+    """Convert a raw Nominatim result into Boseman's location format."""
+    address  = place.get("address", {})
+    city     = (address.get("city") or address.get("town") or
+                address.get("village") or address.get("municipality") or "")
+    state    = address.get("state", "")
+    country  = address.get("country", "")
 
-        final_score = (similarity * 5) + type_score + (importance * 2)
-        scored.append((final_score, place, city, country, address))
-
-    if not scored:
-        return None
-
-    scored.sort(key=lambda x: x[0], reverse=True)
-    _, place, city, country, address = scored[0]
-
-    state          = address.get("state", "")
     location_parts = [p for p in [city, state, country] if p]
-    display_name   = ", ".join(location_parts) if location_parts else place.get("display_name", query)
+    display_name   = ", ".join(location_parts) if location_parts else place.get("display_name", "")
 
     return {
         "source":       "Nominatim",
@@ -149,3 +102,44 @@ def _pick_best(candidates: list, query: str) -> dict | None:
         "importance":   float(place.get("importance", 0)),
         "boundingbox":  place.get("boundingbox", []),
     }
+
+
+def search_nominatim(query: str) -> dict | None:
+    try:
+        # Strategy 1: Try the full original query first
+        # Nominatim is smart — let it parse the full text
+        candidates = _fetch_candidates(query)
+        if candidates:
+            best = max(candidates, key=_score_candidate)
+            return _normalize(best)
+
+        # Strategy 2: Strip snake terms and try the location portion
+        location_str = _strip_snake_terms(query)
+        if location_str and location_str != query.lower():
+            candidates = _fetch_candidates(location_str)
+            if candidates:
+                best = max(candidates, key=_score_candidate)
+                return _normalize(best)
+
+        # Strategy 3: Try each word individually, pick best result
+        words = query.split()
+        all_candidates = []
+        for word in words:
+            if len(word) > 2 and word.lower() not in [t.lower() for t in SNAKE_TERMS]:
+                results = _fetch_candidates(word)
+                all_candidates.extend(results)
+
+        if all_candidates:
+            best = max(all_candidates, key=_score_candidate)
+            return _normalize(best)
+
+        return None
+
+    except requests.exceptions.Timeout:
+        raise Exception("Nominatim request timed out")
+    except requests.exceptions.ConnectionError:
+        raise Exception("Could not connect to Nominatim API")
+    except requests.exceptions.HTTPError as e:
+        raise Exception(f"Nominatim HTTP error: {str(e)}")
+    except Exception as e:
+        raise Exception(f"Nominatim error: {str(e)}")
