@@ -8,5 +8,4 @@ Data sources
 iNaturalist — live snake sighting observations. GBIF — global biodiversity occurrence records. Global Forest Watch — satellite-derived habitat and forest loss data. OpenStreetMap Overpass — global urban land use and building density data. OpenStreetMap Nominatim — geocoding and location resolution. Wikipedia — species information.
 Tech stack
 Backend: Python, Flask, Flask-CORS, concurrent API calls. Frontend: Vanilla HTML, CSS, JavaScript. Maps: Leaflet.js. Deployment: Vercel.
-Author
-Built by Alameen Shuaib. Research published at https://doi.org/10.5281/zenodo.19245787
+Research published at https://doi.org/10.5281/zenodo.19245787
