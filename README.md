@@ -1,4 +1,4 @@
-Here it is:
+
 Boseman is an urban snake displacement search engine that lets researchers, conservationists, and public health workers search for snake sightings and understand why they're appearing in urban areas.
 What it does
 You type in a location, and Boseman pulls live snake sighting data from iNaturalist and GBIF, overlays satellite-derived habitat loss from Global Forest Watch and urban density data from OpenStreetMap, and returns a risk score telling you how likely snakes in that area are being displaced by urban expansion.
@@ -8,5 +8,4 @@ Data sources
 iNaturalist — live snake sighting observations. GBIF — global biodiversity occurrence records. Global Forest Watch — satellite-derived habitat and forest loss data. OpenStreetMap Overpass — global urban land use and building density data. OpenStreetMap Nominatim — geocoding and location resolution. Wikipedia — species information.
 Tech stack
 Backend: Python, Flask, Flask-CORS, concurrent API calls. Frontend: Vanilla HTML, CSS, JavaScript. Maps: Leaflet.js. Deployment: Vercel.
-Author
-Built by Alameen Shuaib. Research published at https://doi.org/10.5281/zenodo.19245787
+
