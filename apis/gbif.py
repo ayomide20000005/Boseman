@@ -16,6 +16,19 @@ SNAKE_TERMS = [
     "tree snake", "rat snake", "serpent", "serpentes"
 ]
 
+LIZARD_TERMS = [
+    "lizard", "gecko", "skink", "iguana", "monitor", "chameleon",
+    "anole", "agama", "dragon", "tuatara", "worm lizard", "legless lizard",
+    "glass lizard", "slowworm", "lacerta", "varanus", "gekko"
+]
+
+
+def _is_snake(name: str) -> bool:
+    name_lower = name.lower()
+    if any(t in name_lower for t in LIZARD_TERMS):
+        return False
+    return True
+
 
 def _parse_query(query: str) -> tuple[str | None, str | None]:
     q = query.lower().strip()
@@ -63,7 +76,6 @@ def search_gbif(query: str, bbox: dict | None = None) -> list:
 
 
 def _fetch_occurrences(q: str, bbox: dict | None = None) -> list:
-    # Use last 5 years for date range to prioritise recent records
     current_year = datetime.now().year
     since_year   = current_year - 5
 
@@ -97,9 +109,14 @@ def _fetch_occurrences(q: str, bbox: dict | None = None) -> list:
 
         species_name = occ.get("species") or occ.get("scientificName", "Unknown species")
         common_name  = occ.get("vernacularName", species_name)
-        country      = occ.get("country", "")
-        state        = occ.get("stateProvince", "")
-        locality     = occ.get("locality", "")
+
+        # Filter out lizards
+        if not _is_snake(species_name) and not _is_snake(common_name):
+            continue
+
+        country     = occ.get("country", "")
+        state       = occ.get("stateProvince", "")
+        locality    = occ.get("locality", "")
 
         location_parts = [p for p in [locality, state, country] if p]
         location = ", ".join(location_parts) if location_parts else "Unknown location"
