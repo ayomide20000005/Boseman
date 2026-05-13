@@ -2,6 +2,7 @@
 
 import os
 import requests
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -71,17 +72,21 @@ def search_inaturalist(query: str, bbox: dict | None = None) -> list:
 
 
 def _fetch_observations(place_guess: str | None, taxon_id: int, bbox: dict | None = None) -> list:
+    # Use last 5 years for date range to prioritise recent sightings
+    current_year = datetime.now().year
+    since_year   = current_year - 5
+
     params = {
-        "taxon_id":  taxon_id,
-        "per_page":  50,
-        "order":     "desc",
-        "order_by":  "created_at",
-        "has[]":     "geo",
-        "photos":    "true",
+        "taxon_id":   taxon_id,
+        "per_page":   100,
+        "order":      "desc",
+        "order_by":   "created_at",
+        "has[]":      "geo",
+        "photos":     "true",
+        "d1":         f"{since_year}-01-01",
     }
 
     if bbox:
-        # Use bounding box for precise location filtering
         params["nelat"] = bbox.get("max_lat")
         params["nelng"] = bbox.get("max_lng")
         params["swlat"] = bbox.get("min_lat")

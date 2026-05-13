@@ -10,18 +10,29 @@ HEADERS = {
 }
 
 
+def _pad_bbox(bbox: dict, padding: float = 0.5) -> dict:
+    """Pad bounding box to capture surrounding habitat outside city boundary."""
+    return {
+        "min_lat": bbox["min_lat"] - padding,
+        "max_lat": bbox["max_lat"] + padding,
+        "min_lng": bbox["min_lng"] - padding,
+        "max_lng": bbox["max_lng"] + padding,
+    }
+
+
 def get_earth_engine_data(query: str, bbox: dict = None) -> dict | None:
     try:
         if not bbox:
             return None
 
-        min_lng = bbox["min_lng"]
-        min_lat = bbox["min_lat"]
-        max_lng = bbox["max_lng"]
-        max_lat = bbox["max_lat"]
+        # Pad bbox to capture habitat beyond tight city boundary
+        padded = _pad_bbox(bbox, padding=0.5)
 
-        # Global Forest Watch — tree cover loss API
-        # Uses Hansen/UMD dataset, same source GEE was using
+        min_lng = padded["min_lng"]
+        min_lat = padded["min_lat"]
+        max_lng = padded["max_lng"]
+        max_lat = padded["max_lat"]
+
         payload = {
             "geometry": {
                 "type": "Polygon",
@@ -55,7 +66,6 @@ def get_earth_engine_data(query: str, bbox: dict = None) -> dict | None:
                 "total_cover_ha":      0.0,
             }
 
-        # Sum up tree cover loss across all years returned
         total_loss_ha  = sum(row.get("umd_tree_cover_loss__ha", 0) or 0 for row in rows)
         total_cover_ha = sum(row.get("umd_tree_cover_extent_2000__ha", 0) or 0 for row in rows)
 
@@ -64,7 +74,6 @@ def get_earth_engine_data(query: str, bbox: dict = None) -> dict | None:
         else:
             forest_loss_percent = 0.0
 
-        # Cap at 100 just in case
         forest_loss_percent = min(forest_loss_percent, 100.0)
 
         return {

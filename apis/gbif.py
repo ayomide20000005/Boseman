@@ -1,6 +1,7 @@
 # backend/apis/gbif.py
 
 import requests
+from datetime import datetime
 
 BASE_URL = "https://api.gbif.org/v1"
 SERPENTES_KEY = 11592253
@@ -62,16 +63,20 @@ def search_gbif(query: str, bbox: dict | None = None) -> list:
 
 
 def _fetch_occurrences(q: str, bbox: dict | None = None) -> list:
+    # Use last 5 years for date range to prioritise recent records
+    current_year = datetime.now().year
+    since_year   = current_year - 5
+
     params = {
         "q":                  q,
         "taxonKey":           SERPENTES_KEY,
-        "limit":              50,
+        "limit":              100,
         "hasCoordinate":      True,
         "hasGeospatialIssue": False,
+        "year":               f"{since_year},{current_year}",
     }
 
     if bbox:
-        # GBIF uses decimalLatitude and decimalLongitude range via geometry
         params["decimalLatitude"]  = f"{bbox.get('min_lat')},{bbox.get('max_lat')}"
         params["decimalLongitude"] = f"{bbox.get('min_lng')},{bbox.get('max_lng')}"
 
@@ -99,15 +104,15 @@ def _fetch_occurrences(q: str, bbox: dict | None = None) -> list:
         location_parts = [p for p in [locality, state, country] if p]
         location = ", ".join(location_parts) if location_parts else "Unknown location"
 
-        year  = occ.get("year", "")
-        month = occ.get("month", "")
-        day   = occ.get("day", "")
+        year       = occ.get("year", "")
+        month      = occ.get("month", "")
+        day        = occ.get("day", "")
         date_parts = [str(p) for p in [year, month, day] if p]
-        date = "-".join(date_parts) if date_parts else "Unknown date"
+        date       = "-".join(date_parts) if date_parts else "Unknown date"
 
         institution = occ.get("institutionCode", "") or occ.get("datasetName", "Unknown source")
 
-        media = occ.get("media", [])
+        media     = occ.get("media", [])
         photo_url = None
         if media:
             photo_url = media[0].get("identifier")

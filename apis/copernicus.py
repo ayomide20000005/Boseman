@@ -10,6 +10,48 @@ HEADERS = {
 }
 
 
+def _get_bbox_size(bbox: dict) -> float:
+    """Calculate the area of the bounding box in degrees squared."""
+    lat_span = abs(bbox["max_lat"] - bbox["min_lat"])
+    lng_span = abs(bbox["max_lng"] - bbox["min_lng"])
+    return lat_span * lng_span
+
+
+def _adjust_bbox(bbox: dict) -> dict:
+    """
+    Make bbox dynamic based on city size.
+    Small cities get a wider box, large cities get a tighter one
+    to avoid Overpass timeout and get meaningful data.
+    """
+    size = _get_bbox_size(bbox)
+
+    if size < 0.01:
+        # Very small area — pad generously
+        pad = 0.05
+    elif size < 0.1:
+        # Small city — pad slightly
+        pad = 0.02
+    elif size > 5.0:
+        # Very large area — shrink to avoid timeout
+        center_lat = (bbox["min_lat"] + bbox["max_lat"]) / 2
+        center_lng = (bbox["min_lng"] + bbox["max_lng"]) / 2
+        return {
+            "min_lat": center_lat - 0.5,
+            "max_lat": center_lat + 0.5,
+            "min_lng": center_lng - 0.5,
+            "max_lng": center_lng + 0.5,
+        }
+    else:
+        pad = 0.0
+
+    return {
+        "min_lat": bbox["min_lat"] - pad,
+        "max_lat": bbox["max_lat"] + pad,
+        "min_lng": bbox["min_lng"] - pad,
+        "max_lng": bbox["max_lng"] + pad,
+    }
+
+
 def get_copernicus_data(query: str, bbox: dict = None) -> dict | None:
     try:
         if not bbox:
@@ -21,13 +63,13 @@ def get_copernicus_data(query: str, bbox: dict = None) -> dict | None:
                 "urban_percent": 0.0,
             }
 
-        min_lat = bbox["min_lat"]
-        min_lng = bbox["min_lng"]
-        max_lat = bbox["max_lat"]
-        max_lng = bbox["max_lng"]
+        adjusted = _adjust_bbox(bbox)
 
-        # Query OSM for urban land use features inside the bounding box
-        # We count buildings, residential, commercial, industrial, retail areas
+        min_lat = adjusted["min_lat"]
+        min_lng = adjusted["min_lng"]
+        max_lat = adjusted["max_lat"]
+        max_lng = adjusted["max_lng"]
+
         overpass_query = f"""
         [out:json][timeout:25];
         (
@@ -50,20 +92,21 @@ def get_copernicus_data(query: str, bbox: dict = None) -> dict | None:
         response.raise_for_status()
         data = response.json()
 
-        # Extract total count of urban features
+        # Handle both ways Overpass can return count
         total_count = 0
-        elements = data.get("elements", [])
+        elements    = data.get("elements", [])
+
         for element in elements:
             if element.get("type") == "count":
-                tags = element.get("tags", {})
+                tags        = element.get("tags", {})
                 total_count = int(tags.get("total", 0))
                 break
 
+        # Fallback — if count element not found count elements directly
         if total_count == 0 and elements:
-            total_count = len(elements)
+            total_count = len([e for e in elements if e.get("type") in ("way", "node", "relation")])
 
-        # Convert feature count to urban percentage
-        # Scale: 0 features = 0%, 500+ features = 100%
+        # Scale: 0 = 0%, 500+ = 100%
         urban_percent = round(min(total_count / 500 * 100, 100), 2)
 
         return {
