@@ -1,6 +1,7 @@
 # app.py
 
 import os
+import time
 import concurrent.futures
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -18,6 +19,53 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+# ══════════════════════════════════════
+# CACHE
+# Simple in-memory cache — stores results per location query
+# Cache duration: 24 hours (86400 seconds)
+# ══════════════════════════════════════
+
+_cache = {}
+CACHE_TTL = 86400  # 24 hours in seconds
+
+
+def _cache_key(query: str) -> str:
+    """Normalize query to use as cache key."""
+    return query.strip().lower()
+
+
+def _get_cached(query: str):
+    key = _cache_key(query)
+    if key in _cache:
+        entry = _cache[key]
+        age   = time.time() - entry["timestamp"]
+        if age < CACHE_TTL:
+            return entry["data"]
+        else:
+            # Expired — remove it
+            del _cache[key]
+    return None
+
+
+def _set_cache(query: str, data: dict):
+    key          = _cache_key(query)
+    _cache[key]  = {
+        "timestamp": time.time(),
+        "data":      data,
+    }
+
+
+def _clean_cache():
+    """Remove all expired entries from cache."""
+    now     = time.time()
+    expired = [k for k, v in _cache.items() if now - v["timestamp"] >= CACHE_TTL]
+    for k in expired:
+        del _cache[k]
+
+
+# ══════════════════════════════════════
+# SEARCH ROUTE
+# ══════════════════════════════════════
 
 @app.route('/search', methods=['POST'])
 def search():
@@ -31,6 +79,14 @@ def search():
     if not query:
         return jsonify({'error': 'Query cannot be empty'}), 400
 
+    # ── Check cache first ──
+    cached = _get_cached(query)
+    if cached:
+        return jsonify({**cached, 'cached': True}), 200
+
+    # ── Clean expired cache entries periodically ──
+    _clean_cache()
+
     results = {
         'query':        query,
         'filters':      filters,
@@ -41,6 +97,7 @@ def search():
         'earth_engine': None,
         'copernicus':   None,
         'risk_score':   None,
+        'cached':       False,
         'errors':       []
     }
 
@@ -118,12 +175,23 @@ def search():
     except Exception as e:
         results['errors'].append({'source': 'RiskScore', 'error': str(e)})
 
+    # ── Store in cache ──
+    _set_cache(query, results)
+
     return jsonify(results), 200
 
 
+# ══════════════════════════════════════
+# HEALTH ROUTE
+# ══════════════════════════════════════
+
 @app.route('/health', methods=['GET'])
 def health():
-    return jsonify({'status': 'Boseman backend is running'}), 200
+    return jsonify({
+        'status':       'Boseman backend is running',
+        'cache_size':   len(_cache),
+        'cache_keys':   list(_cache.keys()),
+    }), 200
 
 
 if __name__ == '__main__':
