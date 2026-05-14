@@ -63,10 +63,6 @@ def _clean_cache():
         del _cache[k]
 
 
-# ══════════════════════════════════════
-# SEARCH ROUTE
-# ══════════════════════════════════════
-
 @app.route('/search', methods=['POST'])
 def search():
     data = request.get_json()
